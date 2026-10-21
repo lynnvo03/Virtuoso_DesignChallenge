@@ -1,0 +1,13 @@
+# Local working screenshots
+temporary screenshots/
+
+# Local dev tooling
+CLAUDE.md
+serve.mjs
+screenshot.mjs
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

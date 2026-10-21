@@ -1,0 +1,1694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#120A2B">
+<title>Virtuoso</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Marcellus&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Base palette, derived from the Stardust brand references */
+    --ink: #120A2B;
+    --surface: #1E1442;
+    --raised: #2B1D58;
+    --line: rgba(243, 236, 220, 0.12);
+    --line-strong: rgba(243, 236, 220, 0.24);
+    --text: #F3ECDC;
+    --muted: #A99FCB;
+    --faint: #948BBF;
+    /* Outline for interactive controls: about 3:1 against the base, per WCAG 1.4.11 */
+    --line-ui: rgba(243, 236, 220, 0.42);
+    /* Prism blooms, used only as light */
+    --ember: #F0414F;
+    --marigold: #FFA743;
+    --verdigris: #34C79B;
+    --orchid: #9A5BD6;
+    /* Rank metals */
+    --bronze: #CD8B5C;
+    --bronze-deep: #7A4A2A;
+    --silver: #D3D9E4;
+    --silver-deep: #7D8596;
+    --gold: #EDC75D;
+    --gold-deep: #8E6A1E;
+    --diamond: #BFE9FF;
+
+    /* Spacing tokens */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+    --gutter: 16px;
+
+    --r-sm: 10px; --r-md: 16px; --r-lg: 24px; --r-pill: 999px;
+
+    --spring: cubic-bezier(.34, 1.56, .64, 1);
+    --glide: cubic-bezier(.22, 1, .36, 1);
+
+    /* Depth: base, elevated, floating */
+    --shadow-elevated: 0 1px 0 rgba(255,255,255,.05) inset, 0 6px 16px -6px rgba(8, 3, 26, .55), 0 2px 4px rgba(8, 3, 26, .35);
+    --shadow-floating: 0 1px 0 rgba(255,255,255,.08) inset, 0 24px 48px -12px rgba(6, 2, 22, .75), 0 8px 20px -8px rgba(90, 40, 160, .35);
+
+    --display: 'Marcellus', 'Times New Roman', serif;
+    --sans: 'Google Sans', 'Product Sans', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background-color: #0C0620;
+    background-image:
+      radial-gradient(60vw 50vh at 15% 20%, rgba(154, 91, 214, .22), transparent 70%),
+      radial-gradient(50vw 50vh at 85% 80%, rgba(240, 65, 79, .14), transparent 70%),
+      radial-gradient(40vw 40vh at 75% 15%, rgba(52, 199, 155, .10), transparent 70%);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* ---------- Device frame (desktop preview of iPhone 15: 393 x 852) ---------- */
+  .stage { position: fixed; inset: 0; display: grid; place-items: center; }
+  .device {
+    position: relative;
+    width: 393px; height: 852px;
+    border-radius: 55px;
+    transform: scale(var(--fit, 1));
+    box-shadow: 0 0 0 11px #0A0A0C, 0 0 0 12.5px #3A3A40, 0 40px 90px -20px rgba(0,0,0,.8), 0 20px 60px -10px rgba(110, 50, 190, .35);
+  }
+  .screen {
+    position: absolute; inset: 0;
+    border-radius: 55px; overflow: hidden;
+    background: var(--ink);
+    isolation: isolate;
+  }
+  .island {
+    position: absolute; top: 11px; left: 50%; width: 126px; height: 37px;
+    transform: translateX(-50%); background: #000; border-radius: 20px; z-index: 60;
+  }
+  .statusbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 55;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 34px 0 46px; font-weight: 600; font-size: 17px; letter-spacing: -0.01em;
+    pointer-events: none;
+  }
+  .statusbar .icons { display: flex; gap: 6px; align-items: center; }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; width: 134px; height: 5px;
+    transform: translateX(-50%); border-radius: 3px; background: var(--text); opacity: .85; z-index: 70;
+    pointer-events: none;
+  }
+  .caption {
+    position: fixed; bottom: 18px; left: 0; right: 0; text-align: center;
+    color: var(--faint); font-size: 13px;
+  }
+
+  /* Full-bleed mode: on phones, and on desktop whenever browser zoom leaves no room for the device frame */
+  html.bleed .stage { display: block; }
+  html.bleed .device { width: 100%; height: 100%; border-radius: 0; box-shadow: none; transform: none; }
+  html.bleed .screen { border-radius: 0; }
+  html.bleed .island, html.bleed .statusbar, html.bleed .home-indicator, html.bleed .caption { display: none; }
+  :root { --safe-top: 59px; --safe-bottom: 34px; }
+  html.bleed { --safe-top: max(env(safe-area-inset-top), 20px); --safe-bottom: max(env(safe-area-inset-bottom), 12px); }
+
+  /* ---------- Atmosphere ---------- */
+  .sky { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .sky::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(1px 1px at 12% 18%, rgba(243,236,220,.7), transparent),
+      radial-gradient(1px 1px at 78% 9%, rgba(243,236,220,.5), transparent),
+      radial-gradient(1.5px 1.5px at 64% 31%, rgba(243,236,220,.6), transparent),
+      radial-gradient(1px 1px at 33% 44%, rgba(243,236,220,.4), transparent),
+      radial-gradient(1px 1px at 88% 52%, rgba(243,236,220,.5), transparent),
+      radial-gradient(1px 1px at 20% 71%, rgba(243,236,220,.4), transparent),
+      radial-gradient(1.5px 1.5px at 52% 83%, rgba(243,236,220,.5), transparent),
+      radial-gradient(1px 1px at 92% 90%, rgba(243,236,220,.4), transparent),
+      radial-gradient(120% 60% at 50% 0%, #1B0F3D 0%, transparent 60%),
+      radial-gradient(100% 50% at 50% 100%, #1A1040 0%, transparent 70%);
+  }
+  .grain {
+    position: absolute; inset: 0; z-index: 50; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- Layout ---------- */
+  .view { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+    padding: calc(var(--safe-top) + var(--s3)) var(--gutter) calc(var(--safe-bottom) + 112px); }
+  /* Keep keyboard focus clear of the floating tab bar and status bar (WCAG 2.4.11) */
+  .view { scroll-padding: calc(var(--safe-top) + var(--s3)) 0 calc(var(--safe-bottom) + 112px); }
+  .view::-webkit-scrollbar { display: none; }
+  .view[hidden] { display: none; }
+
+  .page-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin: var(--s2) 0 var(--s5); }
+  .page-title { font-family: var(--display); font-size: 34px; line-height: 1.1; letter-spacing: -0.03em; margin: 0; font-weight: 400; }
+  .page-aside { color: var(--muted); font-size: 14px; }
+  .lede { color: var(--muted); font-size: 15px; line-height: 1.6; margin: calc(var(--s3) * -1) 0 var(--s5); max-width: 34ch; }
+
+  .section { font-family: var(--display); font-weight: 400; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2; margin: 0 0 var(--s2); }
+  p.body { font-size: 16px; line-height: 1.7; color: rgba(243,236,220,.86); margin: 0; }
+  .small { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  .block { margin-top: var(--s6); }
+  .panel {
+    background: linear-gradient(180deg, rgba(43, 29, 88, .72), rgba(30, 20, 66, .72));
+    border: 1px solid var(--line); border-radius: var(--r-lg);
+    padding: var(--s5) var(--s4); box-shadow: var(--shadow-elevated);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    appearance: none; border: 0; cursor: pointer; font: 600 16px/1 var(--sans);
+    min-height: 50px; padding: 0 var(--s5); border-radius: var(--r-pill);
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+    color: var(--text); position: relative;
+    transition: transform .35s var(--spring), opacity .2s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: scale(.97); }
+  .btn:focus-visible, .tap:focus-visible, .tab:focus-visible, .chip:focus-visible, .opt:focus-visible, .icon-btn:focus-visible {
+    outline: 2px solid var(--diamond); outline-offset: 3px;
+  }
+  .btn-glass {
+    /* The glassy pill from the Stardust sign-up screen */
+    background: linear-gradient(100deg, rgba(240, 190, 200, .92), rgba(205, 200, 235, .9) 55%, rgba(230, 205, 220, .92));
+    color: #24124A; box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 10px 24px -10px rgba(240, 100, 140, .55);
+  }
+  .btn-glass:hover { box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 14px 28px -10px rgba(240, 100, 140, .7); }
+  .btn-violet {
+    background: linear-gradient(100deg, #7A2E9E, #4E2A8F 55%, #8E2F6E);
+    box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 10px 24px -12px rgba(154, 91, 214, .8);
+  }
+  .btn-quiet { background: rgba(243,236,220,.08); border: 1px solid var(--line-ui); }
+  .btn-quiet:hover { background: rgba(243,236,220,.12); }
+  .btn-block { width: 100%; }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
+
+  .icon-btn {
+    appearance: none; border: 1px solid var(--line-ui); background: rgba(243,236,220,.06); color: var(--text);
+    width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    transition: transform .3s var(--spring), opacity .2s ease;
+  }
+  .icon-btn:hover { background: rgba(243,236,220,.12); }
+  .icon-btn:active { transform: scale(.9); }
+  .icon-btn[disabled] { opacity: .3; cursor: default; }
+
+  .tap { appearance: none; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left;
+    transition: transform .35s var(--spring), opacity .2s ease; }
+  .tap:hover { opacity: .92; }
+  .tap:active { transform: scale(.97); }
+
+  /* ---------- Paintings ---------- */
+  .art { position: relative; width: 100%; overflow: hidden; background: #000; }
+  .art-in { position: absolute; inset: 0; }
+  .art img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; }
+  .patch { position: absolute; background-repeat: no-repeat; pointer-events: none; }
+
+  /* Rank frames */
+  .frame { border-radius: 6px; padding: 3px; background: var(--line-strong); box-shadow: var(--shadow-elevated); position: relative; }
+  .frame .art { border-radius: 3px; }
+  .frame.r1 { background: linear-gradient(145deg, #F0B98D, var(--bronze) 40%, var(--bronze-deep) 75%, #D99A6C); }
+  .frame.r2 { background: linear-gradient(145deg, #FFFFFF, var(--silver) 35%, var(--silver-deep) 70%, #E8ECF2); }
+  .frame.r3 { background: linear-gradient(145deg, #FFF1B8, var(--gold) 35%, var(--gold-deep) 72%, #F6D978); }
+  .frame.r4 { background: #9ED8FF; overflow: hidden; isolation: isolate; }
+  .frame.r4::before {
+    content: ''; position: absolute; inset: -60%; z-index: -1;
+    background: conic-gradient(from 0deg, #FF7BA9, #FFD36E, #8BF5C8, #7CC4FF, #C49BFF, #FF7BA9);
+  }
+  @keyframes spin { to { transform: rotate(1turn); } }
+
+  .pip { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+  .pip.r1 { background: radial-gradient(circle at 35% 30%, #F6C9A3, var(--bronze) 55%, var(--bronze-deep)); }
+  .pip.r2 { background: radial-gradient(circle at 35% 30%, #fff, var(--silver) 55%, var(--silver-deep)); }
+  .pip.r3 { background: radial-gradient(circle at 35% 30%, #FFF4C4, var(--gold) 55%, var(--gold-deep)); }
+  .pip.r4 { background: conic-gradient(#FF7BA9, #FFD36E, #8BF5C8, #7CC4FF, #C49BFF, #FF7BA9); }
+
+  /* ---------- Today ---------- */
+  .hero { position: relative; margin: 0 calc(var(--gutter) * -1); padding: var(--s3) var(--gutter) var(--s5); }
+  .hero-glow { position: absolute; inset: -40px -20px 0; z-index: -1; pointer-events: none; }
+  .hero-glow i { position: absolute; border-radius: 50%; filter: blur(28px); opacity: .7; }
+  .hero-glow .g1 { width: 120px; height: 120px; right: -20px; top: 40px; background: radial-gradient(circle, var(--ember), transparent 70%); }
+  .hero-glow .g2 { width: 140px; height: 140px; left: -50px; top: 230px; background: radial-gradient(circle, var(--verdigris), transparent 70%); opacity: .55; }
+  .hero-glow .g3 { width: 130px; height: 130px; right: -40px; top: 300px; background: radial-gradient(circle, var(--marigold), transparent 70%); opacity: .55; }
+  .hero-glow .orbit { position: absolute; left: 50%; top: 52%; border: 1px dashed rgba(243,236,220,.18); border-radius: 50%; transform: translate(-50%, -50%); filter: none; opacity: 1; }
+  .hero-glow .orbit.a { width: 470px; height: 470px; }
+  .hero-glow .orbit.b { width: 360px; height: 360px; }
+
+  .flip { perspective: 1400px; width: 100%; max-width: 300px; margin: 0 auto; }
+  .flip-inner { position: relative; transform-style: preserve-3d; transition: transform 1s var(--glide); }
+  .flip.is-revealed .flip-inner { transform: rotateY(180deg); }
+  .face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .face.front { transform: rotateY(180deg); }
+  .face.back { position: absolute; inset: 0; }
+  /* Only the face toward the viewer can be tapped or focused; the other leaves once the flip ends */
+  .flip:not(.is-revealed) .face.front { pointer-events: none; }
+  .flip.is-revealed .face.back { pointer-events: none; visibility: hidden; transition: visibility 0s linear 1s; }
+  .card-back {
+    height: 100%; border-radius: 14px; overflow: hidden; position: relative;
+    border: 1px solid rgba(243,236,220,.25); box-shadow: var(--shadow-floating);
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: var(--s5) var(--s4);
+    text-align: center;
+  }
+  /* Mystery painting: today's piece behind frosted glass */
+  .mystery { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
+  .mystery img { width: 100%; height: 100%; object-fit: cover; display: block; filter: blur(14px) saturate(1.35); transform: scale(1.3); }
+  .frost { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+    background: linear-gradient(165deg, rgba(243,236,220,.34), rgba(243,236,220,.1) 38%, rgba(18,10,43,.7) 62%, rgba(18,10,43,.85) 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 0 0 1px rgba(255,255,255,.14); }
+  .frost::before { content: ''; position: absolute; inset: 0; opacity: .35; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .frost::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 45%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.28), transparent);
+    transform: translateX(0) skewX(-12deg); animation: sheen 2.4s var(--glide) 2 1s; }
+  @keyframes sheen { 0% { transform: translateX(0) skewX(-12deg); } 45%, 100% { transform: translateX(420%) skewX(-12deg); } }
+  .seal { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto auto;
+    font-family: var(--display); font-size: 30px; color: var(--text);
+    background: rgba(243,236,220,.16); border: 1px solid rgba(255,255,255,.4);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 8px 20px -8px rgba(18,10,43,.6); }
+  .card-back .q { font-family: var(--display); font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 var(--s2); text-shadow: 0 1px 12px rgba(18,10,43,.5); }
+  .card-back .small { margin-bottom: var(--s4); color: rgba(243,236,220,.82); }
+
+  .tagline { text-align: center; margin-top: var(--s5); }
+  .art-title { font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1.1; letter-spacing: -0.03em; margin: 0; }
+  .art-meta { color: var(--muted); font-size: 15px; margin-top: var(--s2); line-height: 1.5; }
+
+  /* Rank track */
+  .track { display: grid; grid-template-columns: repeat(4, 1fr); position: relative; margin-top: var(--s5); }
+  .track::before { content: ''; position: absolute; top: 19px; left: 12.5%; right: 12.5%; height: 1px; background: var(--line-strong); }
+  .step { display: flex; flex-direction: column; align-items: center; gap: var(--s2); position: relative; text-align: center; }
+  .medal {
+    width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; position: relative;
+    background: var(--ink); border: 1px dashed var(--line-strong); color: var(--faint);
+  }
+  .step.done .medal { border: 0; color: #2A1606; }
+  .step.done.r1 .medal { background: radial-gradient(circle at 35% 30%, #F6C9A3, var(--bronze) 55%, var(--bronze-deep)); }
+  .step.done.r2 .medal { background: radial-gradient(circle at 35% 30%, #fff, var(--silver) 55%, var(--silver-deep)); color: #2A2F3A; }
+  .step.done.r3 .medal { background: radial-gradient(circle at 35% 30%, #FFF4C4, var(--gold) 55%, var(--gold-deep)); color: #3A2A06; }
+  .step.done.r4 .medal { background: conic-gradient(#FF7BA9, #FFD36E, #8BF5C8, #7CC4FF, #C49BFF, #FF7BA9); color: #1E1442; }
+  .step.next .medal { border: 1.5px solid var(--text); color: var(--text); }
+  .step .lbl { font-size: 13px; font-weight: 600; }
+  .step .req { font-size: 11.5px; color: var(--muted); line-height: 1.35; max-width: 11ch; }
+
+  /* Quiz */
+  .opts { display: grid; gap: var(--s2); margin-top: var(--s4); }
+  .opt {
+    appearance: none; text-align: left; cursor: pointer; font: 500 15px/1.45 var(--sans); color: var(--text);
+    background: rgba(18,10,43,.55); border: 1px solid var(--line-ui); border-radius: var(--r-md);
+    padding: var(--s3) var(--s4); min-height: 52px; display: flex; align-items: center; gap: var(--s3);
+    transition: transform .35s var(--spring), opacity .2s ease;
+  }
+  .opt:hover { background: rgba(43,29,88,.9); }
+  .opt:active { transform: scale(.98); }
+  .opt.wrong { border-color: rgba(240,65,79,.7); color: var(--muted); }
+  .opt.right { border-color: var(--silver); background: rgba(211,217,228,.12); }
+  .opt[disabled] { cursor: default; }
+  .opt[disabled]:active { transform: none; }
+  .feedback { margin-top: var(--s3); font-size: 14px; line-height: 1.55; }
+  .feedback.bad { color: #FF9AA3; }
+
+  .lock { display: flex; gap: var(--s3); align-items: flex-start; color: var(--muted); font-size: 14px; line-height: 1.55; margin-top: var(--s3); }
+  .lock svg { flex: none; margin-top: 2px; }
+  .done-row { display: flex; gap: var(--s3); align-items: center; margin-top: var(--s3); font-size: 14px; color: var(--text); }
+
+  .museum { display: flex; gap: var(--s4); align-items: flex-start; margin-top: var(--s3); }
+  .museum .pin { width: 44px; height: 44px; flex: none; border-radius: 14px; display: grid; place-items: center;
+    background: linear-gradient(145deg, rgba(191,233,255,.18), rgba(196,155,255,.14)); border: 1px solid var(--line); }
+  .museum .name { font-weight: 600; font-size: 16px; }
+  .panel .btn { margin-top: var(--s4); }
+
+  /* ---------- Gallery ---------- */
+  /* Horizontal sliders: touch swipe, mouse drag and trackpad/wheel all scroll them */
+  .hscroll { cursor: grab; overscroll-behavior-x: contain; }
+  .hscroll.dragging { cursor: grabbing; scroll-snap-type: none !important; scroll-behavior: auto !important; user-select: none; }
+  .hscroll.dragging > * { pointer-events: none; }
+  .fade-edges {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--gutter), #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 var(--gutter), #000 calc(100% - 40px), transparent); }
+  .fade-edges.at-end {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--gutter));
+    mask-image: linear-gradient(90deg, transparent, #000 var(--gutter)); }
+  .chips { display: flex; gap: var(--s2); overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1) var(--s5); padding: 2px var(--gutter); }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips::after, .pick-row::after { content: ''; flex: none; width: 1px; }
+  .chip {
+    appearance: none; flex: none; cursor: pointer;
+    font: 600 14px/1 var(--sans); color: var(--muted); padding: 0 var(--s4); min-height: 40px; border-radius: var(--r-pill);
+    background: rgba(243,236,220,.05); border: 1px solid var(--line-ui);
+    transition: transform .35s var(--spring), opacity .2s ease;
+  }
+  .chip:hover { color: var(--text); }
+  .chip:active { transform: scale(.95); }
+  .chip[aria-pressed="true"] { color: #24124A; border-color: transparent;
+    background: linear-gradient(100deg, rgba(240,190,200,.95), rgba(205,200,235,.95)); }
+  .period-intro { margin: 0 0 var(--s6); }
+  .period-intro .dates { font-family: var(--display); font-size: 22px; letter-spacing: -0.02em; }
+  .period-intro p { margin: var(--s2) 0 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+  .shelf { margin-bottom: var(--s4); }
+  .shelf-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s3); }
+  .shelf-name { font-family: var(--display); font-weight: 400; font-size: 21px; letter-spacing: -0.02em; line-height: 1.2; margin: 0; }
+  .shelf-tools { display: flex; align-items: center; gap: var(--s2); }
+  .shelf-count { color: var(--muted); font-size: 13px; margin-right: var(--s1); }
+  .shelf-row { position: relative; }
+  .shelf-scroll { display: flex; gap: var(--s4); overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth;
+    margin: 0 calc(var(--gutter) * -1); padding: var(--s3) var(--gutter) var(--s6); scroll-snap-type: x proximity; scroll-padding: 0 var(--gutter); align-items: flex-start; }
+  .shelf-scroll::-webkit-scrollbar { display: none; }
+  .slot { flex: none; height: 150px; scroll-snap-align: start; position: relative; z-index: 1; }
+  /* Paintings float freely; every other card sits a little lower so the row breathes */
+  .slot:nth-child(even) { margin-top: var(--s4); }
+  .slot .frame { height: 100%;
+    box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 22px 30px -14px rgba(6, 2, 22, .9), 0 10px 26px -10px color-mix(in srgb, var(--tint) 45%, transparent); }
+  .slot .frame .art { height: 100%; }
+  .slot .rank-tag { position: absolute; top: 6px; left: 6px; display: flex; align-items: center; gap: 5px; z-index: 2;
+    background: rgba(18,10,43,.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    padding: 4px 7px 4px 5px; border-radius: var(--r-pill); font-size: 11px; font-weight: 600; }
+  .slot.missing { width: 104px; border-radius: 6px; border: 1.5px dashed rgba(243,236,220,.22);
+    background: repeating-linear-gradient(135deg, rgba(243,236,220,.025) 0 8px, transparent 8px 16px), rgba(18,10,43,.5);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s2); color: var(--faint); }
+  .slot.missing span { font-size: 12px; text-align: center; line-height: 1.3; padding: 0 var(--s2); }
+
+  /* ---------- Forgery ---------- */
+  .pick-row { display: flex; gap: var(--s2); overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--gutter) * -1) var(--s5); padding: 2px var(--gutter); }
+  .pick-row::-webkit-scrollbar { display: none; }
+  .pick { flex: none; display: flex; align-items: center; gap: var(--s2); padding: 5px var(--s3) 5px 5px; border-radius: var(--r-pill);
+    background: rgba(243,236,220,.05); border: 1px solid var(--line-ui); font-size: 14px; font-weight: 600; color: var(--muted); }
+  .pick img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+  .pick[aria-pressed="true"] { color: var(--text); border-color: var(--silver); background: rgba(211,217,228,.1); }
+
+  .versus { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); align-items: start; }
+  .candidate { position: relative; }
+  .candidate .frame { background: rgba(243,236,220,.18); }
+  .candidate .letter { display: flex; align-items: center; justify-content: space-between; margin-top: var(--s2); font-size: 14px; font-weight: 600; }
+  .candidate .letter .small { font-weight: 500; }
+  .candidate.is-right .frame { background: linear-gradient(145deg, #FFF1B8, var(--gold) 35%, var(--gold-deep) 72%, #F6D978); }
+  .candidate.is-fake .frame { background: rgba(240,65,79,.75); }
+  .stamp { position: absolute; top: 8px; right: 8px; z-index: 3; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: var(--r-pill); }
+  .stamp.real { background: var(--gold); color: #3A2A06; }
+  .stamp.fake { background: #C92A3A; color: #fff; }
+
+  .result { margin-top: var(--s5); }
+  .result h3 { font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: -0.02em; margin: 0 0 var(--s2); }
+
+  .empty { text-align: center; padding: var(--s7) var(--s4); }
+  .empty .glyph { width: 84px; height: 84px; margin: 0 auto var(--s5); border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, rgba(191,233,255,.25), rgba(154,91,214,.15) 60%, transparent); border: 1px dashed var(--line-strong); }
+  .empty h3 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0 0 var(--s2); letter-spacing: -0.02em; }
+  .empty p { color: var(--muted); font-size: 15px; line-height: 1.6; margin: 0 auto var(--s5); max-width: 30ch; }
+
+  /* ---------- Profile ---------- */
+  .found { display: flex; align-items: flex-end; gap: var(--s3); }
+  .found .n { font-family: var(--display); font-size: 64px; line-height: .9; letter-spacing: -0.04em; }
+  .found .of { color: var(--muted); font-size: 15px; padding-bottom: 6px; line-height: 1.35; }
+  .ratio { display: flex; height: 12px; border-radius: var(--r-pill); overflow: hidden; margin: var(--s5) 0 var(--s4); background: rgba(243,236,220,.06); gap: 2px; }
+  .ratio i { display: block; height: 100%; }
+  .ratio .r1 { background: linear-gradient(90deg, var(--bronze-deep), var(--bronze)); }
+  .ratio .r2 { background: linear-gradient(90deg, var(--silver-deep), var(--silver)); }
+  .ratio .r3 { background: linear-gradient(90deg, var(--gold-deep), var(--gold)); }
+  .ratio .r4 { background: linear-gradient(90deg, #7CC4FF, #C49BFF, #FF7BA9); }
+  .rank-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s2); }
+  .rank-cell { text-align: center; padding: var(--s3) 0; border-radius: var(--r-md); background: rgba(18,10,43,.45); border: 1px solid var(--line); }
+  .rank-cell .count { font-family: var(--display); font-size: 26px; line-height: 1.1; margin-top: var(--s2); }
+  .rank-cell .nm { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .rank-cell .pct { font-size: 11px; color: var(--faint); }
+  .row-list { margin-top: var(--s5); border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); background: rgba(30,20,66,.6); box-shadow: var(--shadow-elevated); }
+  .row { display: flex; align-items: center; gap: var(--s3); padding: var(--s4); width: 100%; min-height: 72px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row .k { font-size: 13px; color: var(--muted); }
+  .row .v { font-family: var(--display); font-size: 20px; letter-spacing: -0.01em; margin-top: 2px; }
+  .row .grow { flex: 1; }
+  .row .thumbs { display: flex; }
+  .row .thumbs img { width: 32px; height: 32px; object-fit: cover; border-radius: 50%; border: 2px solid var(--surface); margin-left: -10px; }
+  .row.tap:hover { background: rgba(243,236,220,.04); opacity: 1; }
+  .avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    background: radial-gradient(circle at 30% 30%, rgba(255,123,169,.6), rgba(124,196,255,.35) 60%, rgba(154,91,214,.5)); border: 1px solid var(--line-strong); }
+
+  /* ---------- Tab bar ---------- */
+  .tabbar {
+    position: absolute; left: var(--gutter); right: var(--gutter); bottom: calc(var(--safe-bottom) + 6px); z-index: 30;
+    height: 66px; border-radius: 26px; display: grid; grid-template-columns: repeat(4, 1fr);
+    background: rgba(43, 29, 88, .78); border: 1px solid var(--line);
+    backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: var(--shadow-floating);
+  }
+  .tab { appearance: none; background: none; border: 0; cursor: pointer; color: var(--faint); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px; font: 600 11px/1 var(--sans); border-radius: 22px;
+    transition: transform .35s var(--spring), opacity .2s ease; }
+  .tab:hover { color: var(--muted); }
+  .tab:active { transform: scale(.9); }
+  .tab[aria-current="page"] { color: var(--text); }
+  .tab[aria-current="page"] svg { filter: drop-shadow(0 0 8px rgba(243,236,220,.55)); }
+  .tab .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ember); position: absolute; transform: translate(12px, -14px); }
+  .tab { position: relative; }
+
+  /* ---------- Overlays ---------- */
+  .scrim { position: absolute; inset: 0; z-index: 40; background: rgba(8, 3, 24, .62); opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; top: 52px; z-index: 45;
+    background: linear-gradient(180deg, #24184C, var(--ink) 40%); border-radius: 28px 28px 0 0; border-top: 1px solid var(--line-strong);
+    transform: translateY(105%); transition: transform .5s var(--glide); box-shadow: var(--shadow-floating);
+    display: flex; flex-direction: column;
+  }
+  .sheet.on { transform: translateY(0); }
+  .sheet-grab { display: flex; align-items: center; justify-content: space-between; padding: var(--s3) var(--gutter) var(--s2); }
+  .sheet-grab::before { content: ''; position: absolute; top: 7px; left: 50%; width: 38px; height: 5px; border-radius: 3px; background: var(--line-strong); transform: translateX(-50%); }
+  .sheet-body { overflow-y: auto; padding: 0 var(--gutter) calc(var(--safe-bottom) + var(--s6)); scrollbar-width: none; flex: 1; }
+  .sheet-body::-webkit-scrollbar { display: none; }
+  .sheet.short { top: auto; max-height: 70%; }
+
+  .modal { position: absolute; inset: 0; z-index: 80; display: grid; place-items: center; padding: var(--s5); pointer-events: none; }
+  .modal-card { width: 100%; max-width: 330px; text-align: center; padding: var(--s6) var(--s5) var(--s5); border-radius: 30px;
+    background: linear-gradient(180deg, rgba(43,29,88,.96), rgba(24,15,56,.98)); border: 1px solid var(--line-strong); box-shadow: var(--shadow-floating);
+    opacity: 0; transform: scale(.85) translateY(20px); transition: transform .6s var(--spring), opacity .25s ease; pointer-events: none; position: relative; overflow: hidden; }
+  .modal::before { content: ''; position: absolute; inset: 0; background: rgba(8, 3, 24, .72); opacity: 0; transition: opacity .3s ease; }
+  .modal.on::before { opacity: 1; }
+  .modal.on { pointer-events: auto; }
+  .modal.on .modal-card { opacity: 1; transform: none; pointer-events: auto; }
+  .modal-card .frame { width: 150px; margin: 0 auto var(--s5); transform: rotate(-3deg); }
+  .modal-card h3 { font-family: var(--display); font-weight: 400; font-size: 32px; letter-spacing: -0.03em; margin: 0; line-height: 1.1; }
+  .modal-card p { color: var(--muted); font-size: 15px; line-height: 1.6; margin: var(--s2) 0 var(--s5); }
+  .modal-card .burst { position: absolute; inset: -30%; z-index: -1; opacity: .5; pointer-events: none;
+    background: radial-gradient(circle at 50% 35%, var(--glow, rgba(237,199,93,.45)), transparent 45%); }
+
+  /* Lightbox for forgery inspection */
+  .lightbox { position: absolute; inset: 0; z-index: 46; background: radial-gradient(90% 50% at 50% 40%, #1E1442, #0C0620 70%); display: flex; flex-direction: column;
+    padding: calc(var(--safe-top) + var(--s2)) var(--gutter) calc(var(--safe-bottom) + var(--s4));
+    opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+  .lightbox.on { opacity: 1; pointer-events: auto; }
+  .lb-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s4); }
+  .lb-stage { flex: 1; display: grid; place-items: center; min-height: 0; }
+  .lb-stage .frame { width: 100%; max-height: 100%; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: rgba(243,236,220,.07); border: 1px solid var(--line-ui); border-radius: var(--r-pill); padding: 3px; margin: var(--s4) 0 var(--s3); }
+  .seg button { appearance: none; border: 0; background: none; color: var(--muted); font: 600 15px/1 var(--sans); height: 40px; border-radius: var(--r-pill); cursor: pointer;
+    transition: transform .35s var(--spring), opacity .2s ease; }
+  .seg button:hover { color: var(--text); }
+  .seg button:active { transform: scale(.96); }
+  .seg button:focus-visible { outline: 2px solid var(--diamond); outline-offset: 1px; }
+  .seg button[aria-pressed="true"] { background: rgba(243,236,220,.16); color: var(--text); }
+
+  /* Camera (simulated diamond capture) */
+  .camera { position: absolute; inset: 0; z-index: 85; background: #000; opacity: 0; pointer-events: none; transition: opacity .3s ease; overflow: hidden; }
+  .camera.on { opacity: 1; pointer-events: auto; }
+  .cam-wall { position: absolute; inset: 0; background:
+      radial-gradient(70% 45% at 50% 42%, #5D4E44, #2C241F 70%, #15110E), linear-gradient(#2A2320, #120E0C); }
+  .cam-wall::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: linear-gradient(#3B2F26, #1A1410); border-top: 1px solid rgba(255,255,255,.06); }
+  .cam-piece { position: absolute; left: 50%; top: 40%; width: 230px; transform: translate(-50%, -50%) perspective(800px) rotateY(-9deg) rotateX(2deg);
+    padding: 12px; background: linear-gradient(145deg, #C9A24A, #6B4F17 50%, #B48A35); box-shadow: 0 30px 50px -10px rgba(0,0,0,.8); animation: drift 5s ease-in-out 1; }
+  @keyframes drift { 50% { transform: translate(-50%, -50%) perspective(800px) rotateY(-6deg) rotateX(1deg) translateX(4px); } }
+  .cam-light { position: absolute; left: 50%; top: 0; width: 300px; height: 360px; transform: translateX(-50%);
+    background: radial-gradient(50% 60% at 50% 0%, rgba(255, 236, 200, .25), transparent 70%); pointer-events: none; }
+  .brackets { position: absolute; left: 50%; top: 40%; width: 280px; height: 360px; transform: translate(-50%, -50%); pointer-events: none; }
+  .brackets i { position: absolute; width: 34px; height: 34px; border: 3px solid #fff; opacity: .9; }
+  .brackets i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
+  .brackets i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
+  .brackets i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
+  .brackets i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
+  .brackets.locked i { border-color: var(--verdigris); }
+  .cam-top { position: absolute; top: calc(var(--safe-top) + var(--s2)); left: var(--gutter); right: var(--gutter); display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); }
+  .cam-hint { background: rgba(0,0,0,.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: var(--r-md); padding: var(--s3) var(--s4); font-size: 14px; line-height: 1.45; }
+  .cam-bottom { position: absolute; left: 0; right: 0; bottom: calc(var(--safe-bottom) + var(--s5)); display: flex; flex-direction: column; align-items: center; gap: var(--s3); }
+  .shutter { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #fff; background: none; cursor: pointer; display: grid; place-items: center;
+    transition: transform .35s var(--spring), opacity .2s ease; }
+  .shutter::after { content: ''; width: 60px; height: 60px; border-radius: 50%; background: #fff; transition: transform .35s var(--spring); }
+  .shutter:hover::after { transform: scale(.94); }
+  .shutter:active { transform: scale(.9); }
+  .shutter:focus-visible { outline: 2px solid var(--diamond); outline-offset: 4px; }
+  .shutter[disabled] { opacity: .5; cursor: default; }
+  .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  .flash.go { animation: flash .6s ease-out; }
+  @keyframes flash { 0% { opacity: .95; } 100% { opacity: 0; } }
+
+  .toast { position: absolute; left: 50%; top: calc(var(--safe-top) + 4px); z-index: 90; transform: translate(-50%, -20px); opacity: 0;
+    background: rgba(43,29,88,.95); border: 1px solid var(--line-strong); padding: var(--s3) var(--s4); border-radius: var(--r-pill); font-size: 14px; font-weight: 600;
+    box-shadow: var(--shadow-floating); transition: transform .45s var(--spring), opacity .25s ease; white-space: nowrap; pointer-events: none; }
+  .toast.on { transform: translate(-50%, 0); opacity: 1; }
+
+  /* ---------- Zoom ---------- */
+  .zoomable { position: relative; display: block; width: 100%; border-radius: 8px; cursor: zoom-in; }
+  .zoom-badge { position: absolute; right: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px 6px 8px; border-radius: var(--r-pill); font-size: 13px; font-weight: 600; color: var(--text);
+    background: rgba(18,10,43,.82); border: 1px solid var(--line-ui); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 6px 14px -6px rgba(6,2,22,.8); }
+  .zoomable:hover .zoom-badge { background: rgba(43,29,88,.92); }
+  .zoomer { position: absolute; inset: 0; z-index: 88; display: flex; flex-direction: column;
+    background: radial-gradient(90% 50% at 50% 40%, #1E1442, #0A0520 75%);
+    padding: calc(var(--safe-top) + var(--s2)) var(--gutter) calc(var(--safe-bottom) + var(--s3));
+    opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+  .zoomer.on { opacity: 1; pointer-events: auto; }
+  .z-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); }
+  .z-title { font-family: var(--display); font-weight: 400; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2; margin: 0; }
+  .z-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; border-radius: var(--r-md); touch-action: none; cursor: zoom-in;
+    background: rgba(0,0,0,.25); border: 1px solid var(--line); }
+  .z-stage.zoomed { cursor: grab; }
+  .z-stage.zoomed:active { cursor: grabbing; }
+  .z-canvas { position: absolute; transform-origin: 50% 50%; will-change: transform; }
+  .z-canvas.anim { transition: transform .35s var(--glide); }
+  .z-canvas .art { height: 100%; border-radius: 3px; }
+  .z-controls { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s4); }
+  .z-controls .icon-btn { width: 44px; height: 44px; flex: none; }
+  .z-controls input[type=range] { flex: 1; min-width: 0; height: 44px; accent-color: var(--gold); cursor: pointer; background: transparent; }
+  .z-controls input[type=range]:focus-visible { outline: 2px solid var(--diamond); outline-offset: 2px; border-radius: 8px; }
+  .z-level { width: 44px; text-align: center; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .z-reset { min-height: 44px; padding: 0 var(--s4); }
+  .z-hint { color: var(--muted); font-size: 13px; line-height: 1.5; text-align: center; margin: var(--s3) 0 0; }
+
+  /* ---------- Onboarding ---------- */
+  .onboard { position: absolute; inset: 0; z-index: 49; overflow: hidden; background: var(--ink);
+    display: flex; flex-direction: column; justify-content: flex-end; text-align: center;
+    padding: 0 var(--gutter) calc(var(--safe-bottom) + var(--s5));
+    transition: opacity .5s ease, transform .7s var(--glide); }
+  .onboard[hidden] { display: none; }
+  .onboard.out { opacity: 0; transform: scale(1.06); pointer-events: none; }
+  /* Violet bloom behind the gallery, after the image_6 reference */
+  .ob-fade { position: absolute; inset: 0; z-index: -2;
+    background:
+      radial-gradient(55% 30% at 50% 36%, rgba(196,170,255,.42), transparent 70%),
+      radial-gradient(85% 48% at 50% 38%, rgba(108,62,224,.62), rgba(64,30,150,.28) 55%, transparent 80%),
+      linear-gradient(to top, var(--ink) 18%, rgba(18,10,43,.6) 36%, transparent 55%),
+      #0B0620; }
+  .ob-gallery { position: absolute; left: 0; right: 0; top: calc(var(--safe-top) - 12px); height: min(560px, calc(100% - 300px)); z-index: -1; overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+  .ob-card { position: absolute; left: 0; top: 0; width: 214px; height: 300px; border-radius: 28px; overflow: hidden; will-change: transform;
+    box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 28px 40px -18px rgba(6,2,22,.9), 0 10px 30px -12px rgba(120,70,240,.55); }
+  .ob-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ob-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(to top, rgba(0,0,0,.3), transparent 40%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+  .ob-pause { position: absolute; top: calc(var(--safe-top) + var(--s2)); right: var(--gutter); z-index: 2;
+    width: 44px; height: 44px; background: rgba(18,10,43,.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .onboard h1 { font-family: var(--display); font-weight: 400; font-size: 38px; line-height: 1.08; letter-spacing: -0.03em; margin: 0; }
+  .onboard p { color: rgba(243,236,220,.82); font-size: 16px; line-height: 1.6; margin: var(--s3) auto var(--s6); max-width: 30ch; }
+  .btn-light { background: var(--text); color: #1A0F3A; min-height: 56px;
+    box-shadow: 0 1px 0 #fff inset, 0 14px 30px -12px rgba(243,236,220,.5), 0 4px 10px -4px rgba(18,10,43,.5); }
+  .btn-light:hover { box-shadow: 0 1px 0 #fff inset, 0 18px 36px -12px rgba(243,236,220,.65), 0 4px 10px -4px rgba(18,10,43,.5); }
+
+  /* Closed overlays leave the accessibility tree once their exit animation ends */
+  .sheet, .lightbox, .camera, .zoomer, .scrim, .modal { visibility: hidden; }
+  .sheet.on, .lightbox.on, .camera.on, .zoomer.on, .scrim.on, .modal.on { visibility: visible; }
+  .sheet:not(.on) { transition: transform .5s var(--glide), visibility 0s linear .5s; }
+  .lightbox:not(.on), .camera:not(.on), .zoomer:not(.on), .scrim:not(.on), .modal:not(.on) { transition: opacity .3s ease, visibility 0s linear .3s; }
+
+  .fade-in { animation: fadeIn .5s var(--glide) both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  }
+  /* Headings that receive focus programmatically (after a dialog closes) are not controls */
+  [tabindex="-1"]:focus { outline: none; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="device" id="device">
+    <div class="screen" id="screen">
+      <div class="sky"></div>
+      <div class="island" aria-hidden="true"></div>
+      <div class="statusbar" aria-hidden="true">
+        <span>9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.3 0 4.4.9 6 2.4l1.1-1.1A10 10 0 0 0 8 .6 10 10 0 0 0 .9 3.5L2 4.6a8.4 8.4 0 0 1 6-2.4Zm0 3.2c1.4 0 2.7.5 3.7 1.4l1.1-1.1A7 7 0 0 0 8 3.8a7 7 0 0 0-4.8 1.9l1.1 1.1c1-.9 2.3-1.4 3.7-1.4Zm0 3.2c.6 0 1.1.2 1.5.6L8 10.7 6.5 9.2c.4-.4.9-.6 1.5-.6Z"/></svg>
+          <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/><path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" fill="currentColor" opacity=".4"/></svg>
+        </span>
+      </div>
+
+      <main>
+        <section class="view" id="view-today" aria-label="Today"></section>
+        <section class="view" id="view-gallery" aria-label="Gallery" hidden></section>
+        <section class="view" id="view-forgery" aria-label="Forgery" hidden></section>
+        <section class="view" id="view-profile" aria-label="Profile" hidden></section>
+      </main>
+
+      <nav class="tabbar" aria-label="Main">
+        <button class="tab" data-tab="today" aria-current="page">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2.5c.6 4.6 2.3 6.4 7 7-4.7.6-6.4 2.4-7 7-.6-4.6-2.3-6.4-7-7 4.7-.6 6.4-2.4 7-7Z"/><path d="M19 16.5c.3 1.9 1 2.6 2.5 2.9-1.5.3-2.2 1-2.5 2.9-.3-1.9-1-2.6-2.5-2.9 1.5-.3 2.2-1 2.5-2.9Z"/></svg>
+          Today<span class="dot" id="today-dot" hidden></span>
+        </button>
+        <button class="tab" data-tab="gallery">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="3.5" width="7.5" height="10" rx="1"/><rect x="13.5" y="3.5" width="7.5" height="6" rx="1"/><rect x="13.5" y="12.5" width="7.5" height="8" rx="1"/><rect x="3" y="16.5" width="7.5" height="4" rx="1"/></svg>
+          Gallery
+        </button>
+        <button class="tab" data-tab="forgery">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/><path d="M8 10.5h5M10.5 8v5" opacity=".7"/></svg>
+          Forgery
+        </button>
+        <button class="tab" data-tab="profile">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>
+          Profile
+        </button>
+      </nav>
+
+      <section class="onboard" id="onboard" aria-label="Welcome" hidden>
+        <div class="ob-fade" aria-hidden="true"></div>
+        <div class="ob-gallery" id="ob-gallery" role="img">
+        </div>
+        <button class="icon-btn ob-pause" id="ob-pause" aria-pressed="false" aria-label="Pause the moving gallery"></button>
+        <h1>Welcome to Virtuoso</h1>
+        <p>Discover a famous painting every day, learn its story, and collect it from Bronze to Diamond.</p>
+        <button class="btn btn-light btn-block" id="start">Start collecting</button>
+      </section>
+
+      <div class="scrim" id="scrim"></div>
+      <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Painting">
+        <div class="sheet-grab"><span id="sheet-title" class="small"></span><button class="icon-btn" id="sheet-close" aria-label="Close"><svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 2l10 10M12 2 2 12"/></svg></button></div>
+        <div class="sheet-body" id="sheet-body"></div>
+      </div>
+      <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Inspect painting"></div>
+      <div class="camera" id="camera" role="dialog" aria-modal="true" aria-label="Capture in person"></div>
+      <div class="modal" id="modal" role="alertdialog" aria-modal="true" aria-label="Rank earned"></div>
+      <div class="zoomer" id="zoomer" role="dialog" aria-modal="true" aria-label="Zoom"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="grain"></div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+  <div class="caption">Virtuoso prototype, sized for iPhone 15</div>
+</div>
+
+<script>
+/* ===================== Content ===================== */
+const PERIODS = [
+  { id: 'renaissance', name: 'Renaissance', dates: 'c. 1400 to 1600', tint: '#E39A4B',
+    about: 'Italian artists revived the ideals of ancient Greece and Rome, using perspective, anatomy and oil paint to make the world look real.' },
+  { id: 'baroque', name: 'Baroque', dates: 'c. 1600 to 1750', tint: '#4F8FE0',
+    about: 'Drama, deep shadow and intimate everyday scenes. In the Dutch Republic, merchants bought paintings of their own homes and cities.' },
+  { id: 'romanticism', name: 'Romanticism', dates: 'c. 1780 to 1850', tint: '#7FA6C9',
+    about: 'Painters turned to emotion, nature and the sublime: the mix of awe and fear you feel before something vast.' },
+  { id: 'impressionism', name: 'Impressionism', dates: 'c. 1860 to 1890', tint: '#41B88E',
+    about: 'Working outdoors with quick, visible brushstrokes, painters tried to catch a passing moment of light.' },
+  { id: 'post-impressionism', name: 'Post-Impressionism', dates: 'c. 1885 to 1910', tint: '#E5B436',
+    about: 'Artists kept Impressionism’s bright color but pushed it toward structure, symbol and personal feeling.' },
+  { id: 'symbolism', name: 'Symbolism', dates: 'c. 1880 to 1910', tint: '#D8566A',
+    about: 'Painters reached past what the eye sees to dreams, desire and dread, often with flattened, decorative forms.' },
+];
+
+const ARTISTS = {
+  leonardo: { name: 'Leonardo da Vinci', period: 'renaissance' },
+  botticelli: { name: 'Sandro Botticelli', period: 'renaissance' },
+  raphael: { name: 'Raphael', period: 'renaissance' },
+  michelangelo: { name: 'Michelangelo', period: 'renaissance' },
+  vaneyck: { name: 'Jan van Eyck', period: 'renaissance' },
+  vermeer: { name: 'Johannes Vermeer', period: 'baroque' },
+  rembrandt: { name: 'Rembrandt van Rijn', period: 'baroque' },
+  caravaggio: { name: 'Caravaggio', period: 'baroque' },
+  velazquez: { name: 'Diego Velázquez', period: 'baroque' },
+  friedrich: { name: 'Caspar David Friedrich', period: 'romanticism' },
+  turner: { name: 'J. M. W. Turner', period: 'romanticism' },
+  delacroix: { name: 'Eugène Delacroix', period: 'romanticism' },
+  goya: { name: 'Francisco Goya', period: 'romanticism' },
+  monet: { name: 'Claude Monet', period: 'impressionism' },
+  renoir: { name: 'Pierre-Auguste Renoir', period: 'impressionism' },
+  degas: { name: 'Edgar Degas', period: 'impressionism' },
+  caillebotte: { name: 'Gustave Caillebotte', period: 'impressionism' },
+  vangogh: { name: 'Vincent van Gogh', period: 'post-impressionism' },
+  seurat: { name: 'Georges Seurat', period: 'post-impressionism' },
+  cezanne: { name: 'Paul Cézanne', period: 'post-impressionism' },
+  gauguin: { name: 'Paul Gauguin', period: 'post-impressionism' },
+  munch: { name: 'Edvard Munch', period: 'symbolism' },
+  klimt: { name: 'Gustav Klimt', period: 'symbolism' },
+  bocklin: { name: 'Arnold Böcklin', period: 'symbolism' },
+};
+
+const ARTIST_BIO = {
+  leonardo: 'Painter, engineer and anatomist from the town of Vinci, near Florence. He filled thousands of notebook pages with studies of water, bones and flight, and finished remarkably few paintings.',
+  botticelli: 'Sandro Botticelli ran a busy workshop in Florence and painted for the circle around the powerful Medici family. His figures are known for their flowing lines and dreamy grace.',
+  vermeer: 'Johannes Vermeer spent his whole life in Delft, worked slowly, and left only around 35 paintings. He was nearly forgotten for two centuries after his death.',
+  rembrandt: 'Rembrandt van Rijn was the leading painter of Amsterdam’s Golden Age, famous for dramatic light and the dozens of self-portraits he painted as he aged.',
+  friedrich: 'Caspar David Friedrich was a German Romantic who saw landscape as a mirror of the soul. He often painted people from behind, so we look out through their eyes.',
+  turner: 'J. M. W. Turner was an English painter obsessed with light, weather and the sea. His loose, glowing late style pointed the way toward Impressionism.',
+  monet: 'Claude Monet painted outdoors to catch shifting light, returning to the same subjects, from haystacks to cathedrals to water lilies, at different hours and seasons.',
+  vangogh: 'Vincent van Gogh painted for only about ten years and sold almost nothing in his lifetime. Today he is one of the most recognized artists who ever lived.',
+  seurat: 'Georges Seurat was a French painter who studied the science of color and developed pointillism, building images from small dots of pure color.',
+  munch: 'Edvard Munch was a Norwegian painter who turned anxiety, love and grief into raw, haunting images.',
+  klimt: 'Gustav Klimt led the Vienna Secession, a group of artists who broke away from the conservative academy to bring ornament and modern design into fine art.',
+  raphael: 'Raphael, from the small court city of Urbino, became the most sought-after painter in Rome before dying at just 37. His work is the model of Renaissance clarity and harmony.',
+  michelangelo: 'Michelangelo Buonarroti thought of himself as a sculptor first, yet he painted the most famous ceiling in the world. He lived to 88 and worked almost to the end.',
+  vaneyck: 'Jan van Eyck was court painter to the Duke of Burgundy and worked in Bruges. He perfected oil painting, building up thin glazes to capture light on metal, fur and glass.',
+  caravaggio: 'Caravaggio brought street-level realism and violent contrasts of light and dark to Rome. He was also a brawler who fled the city after killing a man.',
+  velazquez: 'Diego Velázquez spent most of his career as court painter to King Philip IV of Spain. His loose, confident brushwork later inspired Manet and the Impressionists.',
+  delacroix: 'Eugène Delacroix was the leader of French Romanticism, known for bold color, movement and stories drawn from poetry, history and his own time.',
+  goya: 'Francisco Goya was court painter to the Spanish crown who later turned to dark, unflinching images of war, cruelty and madness.',
+  renoir: 'Pierre-Auguste Renoir began as a painter of porcelain and became a leading Impressionist, loved for warm scenes of people enjoying themselves.',
+  degas: 'Edgar Degas exhibited with the Impressionists but called himself a realist. He worked from memory and drawing, catching dancers and laundresses in unguarded moments.',
+  caillebotte: 'Gustave Caillebotte was a painter and a wealthy patron who bought his friends’ work. His collection later helped bring Impressionism into French national museums.',
+  cezanne: 'Paul Cézanne worked mostly alone in Provence, rebuilding nature from simple solid forms. Picasso called him “the father of us all.”',
+  gauguin: 'Paul Gauguin left a career as a stockbroker to paint. He used flat, bold color and later settled in Tahiti, chasing a life far from modern Europe.',
+  bocklin: 'Arnold Böcklin was a Swiss painter of mythic, dreamlike scenes whose brooding moods fascinated the Surrealists a generation later.',
+};
+
+// Forgery edits use percent coordinates of the painting. Types: flip, tint (filter a region), clone (cover a region with a nearby patch).
+const PAINTINGS = [
+  { id: 'mona-lisa', title: 'Mona Lisa', artist: 'leonardo', year: 'c. 1503 to 1519', medium: 'Oil on poplar panel', w: 1000, h: 1490,
+    museum: 'Musée du Louvre', city: 'Paris, France', room: 'Salle des États, Denon Wing',
+    why: 'Florentine silk merchant Francesco del Giocondo most likely commissioned a portrait of his wife, Lisa Gherardini, around the birth of their son. Leonardo never delivered it. He kept refining it for over a decade and carried it with him when he moved to France.',
+    quiz: { q: 'Who most likely commissioned the Mona Lisa?', a: ['Lisa’s husband, a silk merchant', 'The King of France', 'Pope Julius II'] },
+    forgery: { edits: [{ type: 'flip' }], tell: 'The fake is mirrored. In Leonardo’s original, the horizon on the left sits noticeably lower than the one on the right, a famous mismatch that makes her seem to rise as your eye moves across.' } },
+  { id: 'lady-ermine', title: 'Lady with an Ermine', artist: 'leonardo', year: 'c. 1489 to 1491', medium: 'Oil on walnut panel', w: 1000, h: 1345,
+    museum: 'Czartoryski Museum', city: 'Kraków, Poland', room: 'Part of the National Museum in Kraków',
+    why: 'Painted in Milan while Leonardo worked for Duke Ludovico Sforza. The sitter is Cecilia Gallerani, the duke’s young companion. The ermine was a symbol of purity, and also a nod to Ludovico himself, who had been honored with the Order of the Ermine.',
+    quiz: { q: 'What did the ermine stand for?', a: ['Purity, and Duke Ludovico himself', 'Wealth from the fur trade', 'The sitter’s favorite pet'] },
+    forgery: { edits: [{ type: 'tint', x: 66, y: 41, w: 20, h: 33, filter: 'hue-rotate(-75deg) saturate(.75)' }], tell: 'Cecilia’s right shoulder is draped in a deep blue sleeve. The fake turns it green, losing the cool blue that balances the warm red of her bodice.' } },
+  { id: 'birth-venus', title: 'The Birth of Venus', artist: 'botticelli', year: 'c. 1484 to 1486', medium: 'Tempera on canvas', w: 1000, h: 628,
+    museum: 'Uffizi Gallery', city: 'Florence, Italy', room: 'Botticelli Rooms',
+    why: 'Made for the Medici family circle, it shows the goddess Venus arriving on shore after her birth from the sea. A pagan myth painted at this scale was almost unheard of at the time. Florentine thinkers saw Venus as a symbol of spiritual, divine beauty.',
+    quiz: { q: 'What made this painting unusual in its time?', a: ['A large pagan myth instead of a religious scene', 'It was painted on glass', 'It was the first painting signed in gold'] },
+    forgery: { edits: [{ type: 'tint', x: 62, y: 6, w: 15, h: 52, filter: 'hue-rotate(150deg) saturate(.5) brightness(.95)' }], tell: 'The Hora of Spring rushes in with a pink cloak embroidered with flowers to cover Venus. In the fake, the cloak has turned blue.' } },
+  { id: 'primavera', title: 'Primavera', artist: 'botticelli', year: 'c. 1480', medium: 'Tempera on panel', w: 1000, h: 657,
+    museum: 'Uffizi Gallery', city: 'Florence, Italy', room: 'Botticelli Rooms',
+    why: 'Probably made for a Medici wedding, it gathers nine figures from classical myth in an orange grove: Venus at the center, the Three Graces dancing, and Mercury brushing away the clouds. Botanists have identified around 190 different flowers in the meadow.',
+    quiz: { q: 'How many different flowers have botanists found in the meadow?', a: ['Around 190', 'About 12', 'None. They are all invented'] },
+    forgery: { edits: [{ type: 'flip' }], tell: 'The fake is mirrored. Primavera reads from right to left: Zephyrus, the blue west wind, bursts in at the right edge, and Mercury stands at the far left.' } },
+  { id: 'pearl-earring', title: 'Girl with a Pearl Earring', artist: 'vermeer', year: 'c. 1665', medium: 'Oil on canvas', w: 1000, h: 1184,
+    museum: 'Mauritshuis', city: 'The Hague, Netherlands', room: 'Room 15',
+    why: 'It isn’t a portrait of a real person. It’s a tronie, a Dutch study of a face, an expression or an exotic costume. The turban and the oversized pearl were props for the imagination, painted to show off Vermeer’s skill with light.',
+    quiz: { q: 'What is a tronie?', a: ['A study of a face or character, not a specific person', 'A small painting made for a church', 'A painting on copper'] },
+    forgery: { edits: [{ type: 'clone', x: 58.5, y: 51.5, w: 8, h: 8.5, dx: 6.5, dy: -3, mask: 'radial-gradient(closest-side, #000 55%, transparent 100%)' }], tell: 'The pearl is gone. Vermeer painted it with almost nothing: one bright highlight and a soft reflection of her white collar.' } },
+  { id: 'milkmaid', title: 'The Milkmaid', artist: 'vermeer', year: 'c. 1658', medium: 'Oil on canvas', w: 1000, h: 1121,
+    museum: 'Rijksmuseum', city: 'Amsterdam, Netherlands', room: 'Gallery of Honour',
+    why: 'A kitchen maid slowly pours milk, painted as if the moment were sacred. Vermeer gave dignity to ordinary domestic work and celebrated a careful, orderly household. The crust of the bread glitters with tiny dots of light.',
+    quiz: { q: 'How did Vermeer make the bread glitter?', a: ['With tiny dots of bright paint', 'With flakes of gold leaf', 'With varnish mixed with sand'] },
+    forgery: { edits: [{ type: 'tint', x: 45, y: 55, w: 26, h: 32, filter: 'hue-rotate(-75deg) saturate(.7)' }], tell: 'Her apron is painted in ultramarine, ground from lapis lazuli and the most expensive pigment of the day. The fake swaps it for a dull green.' } },
+  { id: 'view-delft', title: 'View of Delft', artist: 'vermeer', year: 'c. 1660 to 1661', medium: 'Oil on canvas', w: 1000, h: 830,
+    museum: 'Mauritshuis', city: 'The Hague, Netherlands', room: 'Room 15',
+    why: 'A portrait of his hometown seen from across the river, made a few years after a gunpowder explosion destroyed part of Delft. Vermeer quietly moved buildings to balance the scene and let sunlight break through onto the roofs behind the bridge.',
+    quiz: { q: 'Did Vermeer paint Delft exactly as it was?', a: ['No, he rearranged buildings for balance', 'Yes, he traced it from a city map', 'Yes, it is accurate to the brick'] },
+    forgery: { edits: [{ type: 'clone', x: 61.5, y: 51.5, w: 4.5, h: 8.5, dx: -5, dy: 0, mask: 'radial-gradient(closest-side, #000 72%, transparent 100%)' }], tell: 'The sunlit tower of the New Church, rising behind the rooftops, has vanished. Vermeer made it the brightest point on the whole skyline.' } },
+  { id: 'night-watch', title: 'The Night Watch', artist: 'rembrandt', year: '1642', medium: 'Oil on canvas', w: 1000, h: 838,
+    museum: 'Rijksmuseum', city: 'Amsterdam, Netherlands', room: 'Night Watch Gallery',
+    why: 'A civic militia company commissioned it for their headquarters. Instead of lining the men up in rows, Rembrandt showed them springing into motion. Its darkened varnish later led people to believe it was a night scene, but it is set in daylight.',
+    quiz: { q: 'Why is it called The Night Watch?', a: ['Darkened varnish made it look like night', 'It shows a night patrol', 'Rembrandt painted it by candlelight'] },
+    forgery: { edits: [{ type: 'tint', x: 53, y: 44, w: 12, h: 50, filter: 'hue-rotate(185deg) saturate(.45)' }], tell: 'Lieutenant van Ruytenburch, beside the captain, wears a golden-yellow uniform that catches the light. The fake turns it blue.' } },
+  { id: 'wanderer', title: 'Wanderer above the Sea of Fog', artist: 'friedrich', year: 'c. 1818', medium: 'Oil on canvas', w: 1000, h: 1281,
+    museum: 'Hamburger Kunsthalle', city: 'Hamburg, Germany', room: '19th-century collection',
+    why: 'A lone traveler stands on a rocky summit above a sea of fog. Friedrich wanted viewers to feel the sublime, and turned the figure away from us so we share his view instead of studying his face.',
+    quiz: { q: 'Why is the wanderer shown from behind?', a: ['So we see the view through his eyes', 'Friedrich avoided painting faces', 'The sitter asked to stay anonymous'] },
+    forgery: { edits: [{ type: 'tint', x: 0, y: 0, w: 100, h: 30, filter: 'sepia(.5) saturate(1.6) hue-rotate(-12deg)', mask: 'linear-gradient(#000 60%, transparent)' }], tell: 'Friedrich’s sky is a cool, pale haze that melts into the fog. The fake warms it into a golden sunset, changing the mood from stillness to drama.' } },
+  { id: 'temeraire', title: 'The Fighting Temeraire', artist: 'turner', year: '1839', medium: 'Oil on canvas', w: 1000, h: 743,
+    museum: 'The National Gallery', city: 'London, United Kingdom', room: 'Room 34',
+    why: 'The warship Temeraire, a hero of the Battle of Trafalgar, is towed away to be broken up for scrap by a small black steam tug. Turner set the ghostly old ship against a blazing sunset as a farewell to the age of sail.',
+    quiz: { q: 'What does the small black tug stand for?', a: ['The new age of steam', 'The navy’s victory', 'A fishing village'] },
+    forgery: { edits: [{ type: 'tint', x: 48, y: 8, w: 52, h: 58, filter: 'hue-rotate(160deg) saturate(.55)', mask: 'radial-gradient(closest-side, #000 25%, transparent 100%)' }], tell: 'Turner set the old ship against a blazing orange sunset on the right. The fake cools that sky to blue, draining away the sense of an ending.' } },
+  { id: 'impression-sunrise', title: 'Impression, Sunrise', artist: 'monet', year: '1872', medium: 'Oil on canvas', w: 1000, h: 776,
+    museum: 'Musée Marmottan Monet', city: 'Paris, France', room: 'Lower gallery',
+    why: 'A quick sketch of the port of Le Havre in morning mist. When Monet exhibited it in 1874, a critic mocked the title and called the whole group “Impressionists.” The insult became the name of the movement.',
+    quiz: { q: 'How did Impressionism get its name?', a: ['A critic mocked this painting’s title', 'Monet wrote it in a manifesto', 'It was a gallery’s slogan'] },
+    forgery: { edits: [{ type: 'tint', x: 58, y: 27, w: 4.6, h: 6.4, filter: 'brightness(1.45) saturate(.6)', mask: 'radial-gradient(closest-side, #000 55%, transparent 100%)' }], tell: 'Monet painted the orange sun at almost the same brightness as the grey sky around it, which makes it seem to flicker. The fake’s sun is brighter than its sky.' } },
+  { id: 'parasol', title: 'Woman with a Parasol', artist: 'monet', year: '1875', medium: 'Oil on canvas', w: 1000, h: 1242,
+    museum: 'National Gallery of Art', city: 'Washington, D.C., United States', room: 'West Building',
+    why: 'Monet’s wife Camille and their son Jean on a breezy summer day, painted outdoors in a single session. He looked up at her from below so she stands against the sky, more a passing moment than a formal portrait.',
+    quiz: { q: 'Who are the two figures?', a: ['Monet’s wife Camille and son Jean', 'Strangers he met in a park', 'Professional studio models'] },
+    forgery: { edits: [{ type: 'tint', x: 22, y: 1, w: 34, h: 20, filter: 'hue-rotate(-110deg) saturate(1.3)' }], tell: 'Camille’s parasol is green, glowing where the sun shines through it. The fake turns it red.' } },
+  { id: 'starry-night', title: 'The Starry Night', artist: 'vangogh', year: '1889', medium: 'Oil on canvas', w: 1000, h: 792,
+    museum: 'The Museum of Modern Art', city: 'New York, United States', room: 'Floor 5',
+    why: 'Painted in the asylum at Saint-Rémy, based on the view from his window before sunrise. The village was added from imagination, and the swirling sky expresses feeling more than fact.',
+    quiz: { q: 'Where did Van Gogh paint The Starry Night?', a: ['In an asylum in Saint-Rémy', 'In a Paris studio', 'On a boat in Arles'] },
+    forgery: { edits: [{ type: 'clone', x: 81, y: 5, w: 18, h: 24, dx: 0, dy: 25 }], tell: 'The glowing crescent moon in the upper right corner is missing. Van Gogh wrapped it in a halo so it balances the dark cypress on the left.' } },
+  { id: 'sunflowers', title: 'Sunflowers', artist: 'vangogh', year: '1888', medium: 'Oil on canvas', w: 1000, h: 1262,
+    museum: 'The National Gallery', city: 'London, United Kingdom', room: 'Room 43',
+    why: 'Painted in Arles to decorate the room of his friend Paul Gauguin, who was coming to stay. Van Gogh wanted to show what could be done with yellow alone, using newly available chrome-yellow paints.',
+    quiz: { q: 'Who were the sunflowers painted to welcome?', a: ['Paul Gauguin', 'His brother Theo', 'A buyer from Paris'] },
+    forgery: { edits: [{ type: 'clone', x: 34, y: 75.5, w: 13, h: 8, dx: 0, dy: -7.5, mask: 'radial-gradient(closest-side, #000 65%, transparent 100%)' }],
+      tell: 'Van Gogh signed this one on the vase itself, in blue: “Vincent.” The fake’s vase is blank.' } },
+  { id: 'bedroom', title: 'The Bedroom', artist: 'vangogh', year: '1888', medium: 'Oil on canvas', w: 1000, h: 793,
+    museum: 'Van Gogh Museum', city: 'Amsterdam, Netherlands', room: 'Floor 1',
+    why: 'Van Gogh’s own room in the Yellow House in Arles. He wanted it to express “absolute restfulness” through flat, bold color. The walls were originally violet. The red pigment has faded, leaving them blue.',
+    quiz: { q: 'What color were the walls originally?', a: ['Violet', 'Bright yellow', 'White'] },
+    forgery: { edits: [{ type: 'tint', x: 48, y: 36, w: 11, h: 22, filter: 'hue-rotate(32deg) saturate(.95)', mask: 'radial-gradient(closest-side, #000 70%, transparent 100%)' }], tell: 'The bedspread on Van Gogh’s yellow bed is scarlet red, a bold accent against all that yellow. The fake turns it orange, so it melts into the bed.' } },
+  { id: 'grande-jatte', title: 'A Sunday on La Grande Jatte', artist: 'seurat', year: '1884 to 1886', medium: 'Oil on canvas', w: 1000, h: 666,
+    museum: 'Art Institute of Chicago', city: 'Chicago, United States', room: 'Gallery 240',
+    why: 'Parisians relax on an island in the Seine on a Sunday afternoon. Seurat spent two years on it, making dozens of studies, and covered it in tiny dots so colors would mix in the viewer’s eye instead of on the palette.',
+    quiz: { q: 'Where are Seurat’s colors meant to mix?', a: ['In the viewer’s eye', 'On the palette', 'In the varnish'] },
+    forgery: { edits: [{ type: 'tint', x: 72, y: 12, w: 20, h: 78, filter: 'hue-rotate(-150deg) saturate(1.1)' }], tell: 'The woman at the right wears a dark dress built from dots of violet and deep blue. The fake swaps it for green.' } },
+  { id: 'scream', title: 'The Scream', artist: 'munch', year: '1893', medium: 'Tempera and crayon on cardboard', w: 1000, h: 1241,
+    museum: 'National Museum', city: 'Oslo, Norway', room: 'Munch Room',
+    why: 'Munch described walking at sunset when the sky suddenly turned blood red and he felt “an infinite scream passing through nature.” The figure isn’t screaming. It is covering its ears against that scream.',
+    quiz: { q: 'What is the figure doing?', a: ['Covering its ears against a scream in nature', 'Shouting at the two men behind it', 'Singing to the sunset'] },
+    forgery: { edits: [{ type: 'tint', x: 0, y: 0, w: 100, h: 32, filter: 'hue-rotate(-38deg) saturate(.72)', mask: 'linear-gradient(#000 70%, transparent)' }], tell: 'Munch’s sky burns in waves of orange and blood red, the color that set off his panic. The fake turns it violet.' } },
+  { id: 'kiss', title: 'The Kiss', artist: 'klimt', year: '1907 to 1908', medium: 'Oil and gold leaf on canvas', w: 1000, h: 1003,
+    museum: 'Upper Belvedere', city: 'Vienna, Austria', room: 'Klimt collection',
+    why: 'Painted during Klimt’s Golden Period, inspired by Byzantine mosaics he had seen in Ravenna. Real gold leaf wraps two lovers in a moment outside of time. His robe is filled with rectangles, hers with circles and flowers.',
+    quiz: { q: 'What inspired Klimt’s use of gold?', a: ['Byzantine mosaics in Ravenna', 'Egyptian tombs', 'Gold coins from Vienna’s mint'] },
+    forgery: { edits: [{ type: 'tint', x: 26, y: 2, w: 27, h: 74, filter: 'saturate(0) brightness(1.15)' }], tell: 'Klimt laid real gold leaf over the man’s robe. The fake turns it silver-grey. The gold was the point, borrowed from glittering Byzantine mosaics.' } },
+
+  { id: 'school-athens', title: 'The School of Athens', artist: 'raphael', year: '1509 to 1511', medium: 'Fresco', w: 1000, h: 776,
+    museum: 'Vatican Museums', city: 'Vatican City', room: 'Raphael Rooms, Room of the Segnatura',
+    why: 'Pope Julius II had Raphael decorate the room that held his private library. Raphael gathered the great thinkers of ancient Greece under one vast arch. Plato, at the center, is thought to be modeled on Leonardo da Vinci, and Raphael slipped his own face in at the far right.',
+    quiz: { q: 'Who is Plato thought to be modeled on?', a: ['Leonardo da Vinci', 'Michelangelo', 'Pope Julius II'] },
+    forgery: { edits: [{ type: 'flip' }], tell: 'The fake is mirrored. In Raphael’s fresco, Plato stands on the left of the central pair pointing up to the heavens, and Aristotle stands on the right with his palm turned toward the earth.' } },
+  { id: 'creation-adam', title: 'The Creation of Adam', artist: 'michelangelo', year: 'c. 1508 to 1512', medium: 'Fresco', w: 1000, h: 454,
+    museum: 'Sistine Chapel', city: 'Vatican City', room: 'Vatican Museums, chapel ceiling',
+    why: 'Part of the Sistine Chapel ceiling that Pope Julius II commissioned. Michelangelo, who saw himself as a sculptor, painted it standing on scaffolding over four years. God reaches toward Adam, their fingers almost touching, to pass on the spark of life.',
+    quiz: { q: 'What did Michelangelo consider himself first?', a: ['A sculptor', 'A poet', 'An architect'] },
+    forgery: { edits: [{ type: 'tint', x: 74, y: 0, w: 26, h: 76, filter: 'hue-rotate(190deg) saturate(.5)', mask: 'radial-gradient(closest-side, #000 50%, transparent 100%)' }], tell: 'God and the angels ride inside a billowing reddish-pink cloak, a shape some doctors read as a human brain. The fake turns the cloak blue.' } },
+  { id: 'arnolfini', title: 'The Arnolfini Portrait', artist: 'vaneyck', year: '1434', medium: 'Oil on oak panel', w: 1000, h: 1368,
+    museum: 'The National Gallery', city: 'London, United Kingdom', room: 'Early Netherlandish collection',
+    why: 'An Italian merchant, Giovanni Arnolfini, and his wife stand in their home in Bruges. A convex mirror on the back wall reflects two more people in the doorway, and above it van Eyck signed the wall: “Jan van Eyck was here, 1434.”',
+    quiz: { q: 'What does van Eyck’s signature on the wall say?', a: ['“Jan van Eyck was here”', '“Painted for the Duke”', '“Bruges forever”'] },
+    forgery: { edits: [{ type: 'tint', x: 56, y: 30, w: 42, h: 66, filter: 'hue-rotate(100deg) saturate(.8)' }], tell: 'Her gown is a deep green, an expensive dye that signaled the couple’s wealth. The fake turns it blue.' } },
+
+  { id: 'calling-matthew', title: 'The Calling of Saint Matthew', artist: 'caravaggio', year: '1599 to 1600', medium: 'Oil on canvas', w: 1000, h: 1028,
+    museum: 'San Luigi dei Francesi', city: 'Rome, Italy', room: 'Contarelli Chapel',
+    why: 'Painted for a chapel in a Roman church. Christ steps in from the right and points at Matthew, a tax collector counting coins with his companions. A shaft of light follows Christ’s hand across the dark room, carrying his call.',
+    quiz: { q: 'What was Matthew’s job?', a: ['Tax collector', 'Fisherman', 'Soldier'] },
+    forgery: { edits: [{ type: 'tint', x: 46, y: 28, w: 54, h: 16, filter: 'brightness(.5)' }], tell: 'A beam of light cuts across the wall above Christ’s outstretched hand, pointing the way to Matthew. The fake drains that beam of light.' } },
+  { id: 'las-meninas', title: 'Las Meninas', artist: 'velazquez', year: '1656', medium: 'Oil on canvas', w: 1000, h: 1151,
+    museum: 'Museo del Prado', city: 'Madrid, Spain', room: 'Velázquez gallery',
+    why: 'The young Infanta Margarita stands among her maids of honor while Velázquez paints at a huge canvas. A mirror at the back reflects King Philip IV and Queen Mariana, which means the royal couple stand exactly where we stand.',
+    quiz: { q: 'Who appears in the mirror at the back?', a: ['The King and Queen of Spain', 'Velázquez himself', 'The Infanta Margarita'] },
+    forgery: { edits: [{ type: 'clone', x: 38, y: 52, w: 7.5, h: 8.5, dx: 0, dy: -12, mask: 'radial-gradient(closest-side, #000 75%, transparent 100%)' }], tell: 'The mirror on the back wall, reflecting King Philip IV and Queen Mariana, is gone. Without it, nothing tells us the royal couple stand where we stand.' } },
+  { id: 'anatomy-lesson', title: 'The Anatomy Lesson of Dr. Nicolaes Tulp', artist: 'rembrandt', year: '1632', medium: 'Oil on canvas', w: 1000, h: 753,
+    museum: 'Mauritshuis', city: 'The Hague, Netherlands', room: 'Dutch Golden Age collection',
+    why: 'Amsterdam’s Guild of Surgeons commissioned this group portrait of a public dissection. Rembrandt was only 26. Instead of lining the members up, he turned them toward Dr. Tulp as he lifts the muscles of the forearm, and the painting made his name.',
+    quiz: { q: 'Who commissioned this painting?', a: ['Amsterdam’s Guild of Surgeons', 'The city’s main church', 'Dr. Tulp’s family'] },
+    forgery: { edits: [{ type: 'tint', x: 49, y: 63, w: 18, h: 10, filter: 'sepia(.5) saturate(.55) brightness(1.6)' }], tell: 'Dr. Tulp lifts the red muscles and tendons of the forearm with his forceps. In the fake, the open arm has been painted over with plain skin.' } },
+
+  { id: 'liberty', title: 'Liberty Leading the People', artist: 'delacroix', year: '1830', medium: 'Oil on canvas', w: 1000, h: 802,
+    museum: 'Musée du Louvre', city: 'Paris, France', room: 'Mollien Room, Denon Wing',
+    why: 'Painted months after the July Revolution of 1830, when Parisians rose up and toppled King Charles X. Liberty, part goddess and part woman of the street, raises the French tricolor and leads people of every class over the barricade.',
+    quiz: { q: 'Which uprising does it celebrate?', a: ['The July Revolution of 1830', 'The storming of the Bastille in 1789', 'Napoleon’s return in 1815'] },
+    forgery: { edits: [{ type: 'tint', x: 32, y: 2, w: 17, h: 19, filter: 'hue-rotate(230deg) saturate(.8)' }], tell: 'Liberty raises the French tricolor of blue, white and red. In the fake, the red stripe has turned blue.' } },
+  { id: 'third-may', title: 'The Third of May 1808', artist: 'goya', year: '1814', medium: 'Oil on canvas', w: 1000, h: 772,
+    museum: 'Museo del Prado', city: 'Madrid, Spain', room: 'Goya collection',
+    why: 'After the people of Madrid rose up against Napoleon’s occupying army, French soldiers executed civilians through the night. Goya painted it six years later. A large lantern lights a man in a white shirt who throws his arms wide before the faceless firing squad.',
+    quiz: { q: 'Who are the soldiers in the firing squad?', a: ['Napoleon’s French troops', 'Spanish royal guards', 'British soldiers'] },
+    forgery: { edits: [{ type: 'clone', x: 55.5, y: 64.5, w: 10, h: 17, dx: -9.5, dy: 0, mask: 'radial-gradient(closest-side, #000 78%, transparent 100%)' }], tell: 'The big square lantern on the ground is missing. It is the only light in the scene, throwing a glare onto the man in the white shirt like a spotlight.' } },
+  { id: 'rain-steam', title: 'Rain, Steam and Speed', artist: 'turner', year: '1844', medium: 'Oil on canvas', w: 1000, h: 747,
+    museum: 'The National Gallery', city: 'London, United Kingdom', room: '19th-century British collection',
+    why: 'A Great Western Railway train races across the Maidenhead bridge through a storm. Railways were new and thrilling, and Turner dissolved the scene into rain and light. A tiny hare runs on the tracks ahead of the engine.',
+    quiz: { q: 'What small animal runs ahead of the train?', a: ['A hare', 'A dog', 'A fox'] },
+    forgery: { edits: [{ type: 'clone', x: 58.5, y: 51, w: 11, h: 16, dx: 12, dy: 0, mask: 'radial-gradient(closest-side, #000 65%, transparent 100%)' }], tell: 'The dark front of the locomotive has dissolved into mist. Turner made the black engine the one solid shape in his storm.' } },
+
+  { id: 'moulin-galette', title: 'Dance at the Moulin de la Galette', artist: 'renoir', year: '1876', medium: 'Oil on canvas', w: 1000, h: 745,
+    museum: 'Musée d’Orsay', city: 'Paris, France', room: 'Impressionist gallery',
+    why: 'A Sunday afternoon at an open-air dance garden in Montmartre. Renoir carried the large canvas to the site again and again, and filled it with his friends. Sunlight falls through the trees in dapples across clothes and faces.',
+    quiz: { q: 'Where did Renoir paint it?', a: ['On site at the dance garden in Montmartre', 'From photographs in his studio', 'From memory in the countryside'] },
+    forgery: { edits: [{ type: 'tint', x: 11, y: 40, w: 11, h: 34, filter: 'hue-rotate(55deg) saturate(1.1)' }], tell: 'The dancing woman at the left wears a soft pink dress. The fake turns it pale green.' } },
+  { id: 'ballet-class', title: 'The Ballet Class', artist: 'degas', year: 'c. 1871 to 1874', medium: 'Oil on canvas', w: 1000, h: 1148,
+    museum: 'Musée d’Orsay', city: 'Paris, France', room: 'Impressionist gallery',
+    why: 'A rehearsal at the Paris Opera, led by the famous ballet master Jules Perrot, who leans on his cane. Degas shows the dancers when they aren’t performing: stretching, waiting, scratching their backs.',
+    quiz: { q: 'Who is the man leaning on the cane?', a: ['Ballet master Jules Perrot', 'Degas himself', 'The opera’s director'] },
+    forgery: { edits: [{ type: 'tint', x: 29, y: 58, w: 18, h: 16, filter: 'hue-rotate(-130deg) saturate(1.2)' }], tell: 'The dancer in front, seen from behind, wears a dark green sash. The fake ties a violet one.' } },
+  { id: 'monet-bridge', title: 'Bridge over a Pond of Water Lilies', artist: 'monet', year: '1899', medium: 'Oil on canvas', w: 1000, h: 1255,
+    museum: 'The Metropolitan Museum of Art', city: 'New York, United States', room: '19th-century European paintings',
+    why: 'Monet designed and planted his own water garden at Giverny, including this Japanese-style footbridge. He painted the pond for more than twenty years, and these water lilies became the obsession of the rest of his life.',
+    quiz: { q: 'Who created the garden in the painting?', a: ['Monet himself', 'A Japanese gardener', 'The French state'] },
+    forgery: { edits: [{ type: 'tint', x: 0, y: 22, w: 100, h: 27, filter: 'hue-rotate(-150deg) saturate(.8)', mask: 'none', clip: 'polygon(0 20%, 25% 8%, 50% 4%, 75% 8%, 100% 20%, 100% 100%, 75% 72%, 50% 64%, 25% 72%, 0 100%)' }], tell: 'Monet painted his footbridge a cool blue-green so it melts into the garden, unlike the red bridges in Japanese prints. The fake paints it lilac.' } },
+  { id: 'rainy-day', title: 'Paris Street; Rainy Day', artist: 'caillebotte', year: '1877', medium: 'Oil on canvas', w: 1000, h: 757,
+    museum: 'Art Institute of Chicago', city: 'Chicago, United States', room: 'Impressionism galleries',
+    why: 'Parisians cross the wide new boulevards that had just been cut through the old city. A tall green lamppost splits the canvas in two: a crowded right half with a couple under one umbrella, and a deep, open street on the left.',
+    quiz: { q: 'What divides the painting in two?', a: ['A green lamppost', 'A tree', 'A horse-drawn carriage'] },
+    forgery: { edits: [{ type: 'clone', x: 47, y: 0, w: 5.5, h: 77, dx: -5.5, dy: 0, mask: 'linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent)' }], tell: 'The tall green lamppost in the middle is gone. Caillebotte used it to split the scene into two halves.' } },
+
+  { id: 'cafe-terrace', title: 'Café Terrace at Night', artist: 'vangogh', year: '1888', medium: 'Oil on canvas', w: 1000, h: 1254,
+    museum: 'Kröller-Müller Museum', city: 'Otterlo, Netherlands', room: 'Van Gogh collection',
+    why: 'Painted on the spot one evening in Arles, it was his first painting with a starry sky. Van Gogh was proud to have painted a night scene without any black, only blues, violets and the gas-lit yellow of the café.',
+    quiz: { q: 'Which color did Van Gogh avoid in this night scene?', a: ['Black', 'Blue', 'Yellow'] },
+    forgery: { edits: [{ type: 'tint', x: 4, y: 6, w: 46, h: 52, filter: 'saturate(.15) brightness(1.1)' }], tell: 'The café’s awning glows a warm gas-lit yellow against the blue night. The fake bleaches it white.' } },
+  { id: 'card-players', title: 'The Card Players', artist: 'cezanne', year: 'c. 1890 to 1895', medium: 'Oil on canvas', w: 1000, h: 820,
+    museum: 'Musée d’Orsay', city: 'Paris, France', room: 'Post-Impressionist gallery',
+    why: 'One of five paintings of farm workers playing cards in Provence. Cézanne built the two men like solid, still architecture. A bottle stands at the center of the table, splitting the scene in two.',
+    quiz: { q: 'What stands between the two players?', a: ['A bottle', 'A candle', 'A pile of coins'] },
+    forgery: { edits: [{ type: 'clone', x: 51, y: 26, w: 8.5, h: 28, dx: 8, dy: 0, mask: 'radial-gradient(closest-side, #000 72%, transparent 100%)' }], tell: 'The dark bottle standing at the center of the table is gone. Cézanne used it as an upright line that splits the painting between the two players.' } },
+  { id: 'vision-sermon', title: 'Vision after the Sermon', artist: 'gauguin', year: '1888', medium: 'Oil on canvas', w: 1000, h: 798,
+    museum: 'Scottish National Gallery', city: 'Edinburgh, United Kingdom', room: 'National Galleries of Scotland',
+    why: 'Breton women leaving church see the sermon come alive: Jacob wrestling an angel. Gauguin painted the ground a flat, unnatural vermilion to show that this is a vision in their minds, not a real field.',
+    quiz: { q: 'Why is the field painted red?', a: ['To show it is a vision, not reality', 'Fields in Brittany were red', 'It was the only paint he had'] },
+    forgery: { edits: [{ type: 'tint', x: 18, y: 0, w: 82, h: 62, filter: 'hue-rotate(100deg) saturate(.7)', mask: 'radial-gradient(closest-side, #000 55%, transparent 100%)' }], tell: 'Gauguin painted the ground a flat vermilion red to mark it as a vision. The fake “corrects” it into a green field.' } },
+  { id: 'bathers', title: 'Bathers at Asnières', artist: 'seurat', year: '1884', medium: 'Oil on canvas', w: 1000, h: 664,
+    museum: 'The National Gallery', city: 'London, United Kingdom', room: '19th-century French collection',
+    why: 'Young working men rest on the riverbank across from La Grande Jatte, with factory chimneys behind them. Seurat gave an everyday scene of workers the calm and scale of a classical painting.',
+    quiz: { q: 'Who are the bathers?', a: ['Young working-class Parisians', 'Wealthy aristocrats', 'Off-duty soldiers'] },
+    forgery: { edits: [{ type: 'tint', x: 84, y: 55, w: 8, h: 10, filter: 'hue-rotate(200deg) saturate(.9)' }], tell: 'The boy standing in the water at the right, calling out with cupped hands, wears a bright red-orange cap. The fake turns it blue.' } },
+
+  { id: 'adele', title: 'Portrait of Adele Bloch-Bauer I', artist: 'klimt', year: '1907', medium: 'Oil, silver and gold leaf on canvas', w: 1000, h: 1001,
+    museum: 'Neue Galerie New York', city: 'New York, United States', room: 'Klimt gallery',
+    why: 'Commissioned by the Viennese sugar industrialist Ferdinand Bloch-Bauer as a portrait of his wife. The Nazis seized it in 1938. After a long legal fight, Austria returned it to the family’s heir, Maria Altmann, in 2006.',
+    quiz: { q: 'How did the painting leave Austria?', a: ['It was returned to the family’s heir', 'Klimt sold it to an American', 'It was lent for a world tour'] },
+    forgery: { edits: [{ type: 'tint', x: 0, y: 77.5, w: 20.5, h: 22.5, filter: 'hue-rotate(-95deg) saturate(1.1)', mask: 'none' }], tell: 'A single block of green at the lower left breaks the field of gold. The fake turns it magenta.' } },
+  { id: 'isle-dead', title: 'Isle of the Dead', artist: 'bocklin', year: '1880', medium: 'Oil on canvas', w: 1000, h: 713,
+    museum: 'Kunstmuseum Basel', city: 'Basel, Switzerland', room: '19th-century collection',
+    why: 'A rowboat carries a white-shrouded figure and a coffin toward a rocky island of cypress trees. Böcklin painted five versions and never explained it. It inspired Rachmaninoff’s symphonic poem of the same name.',
+    quiz: { q: 'What did Rachmaninoff create, inspired by it?', a: ['A symphonic poem', 'An opera', 'A ballet'] },
+    forgery: { edits: [{ type: 'clone', x: 39.5, y: 74, w: 4.5, h: 11, dx: -6, dy: 0, mask: 'radial-gradient(closest-side, #000 70%, transparent 100%)' }], tell: 'The white-shrouded figure standing in the rowboat is gone. Böcklin never said who it is, but it is the eerie focus of the whole scene.' } },
+];
+
+const RANKS = [
+  null,
+  { n: 1, name: 'Bronze', req: 'See it', earned: 'You’ve seen this painting and added it to your collection.', glow: 'rgba(205,139,92,.55)' },
+  { n: 2, name: 'Silver', req: 'Answer the question', earned: 'You know the story behind it.', glow: 'rgba(211,217,228,.5)' },
+  { n: 3, name: 'Gold', req: 'Spot the forgery', earned: 'You can tell the real painting from a convincing fake.', glow: 'rgba(237,199,93,.55)' },
+  { n: 4, name: 'Diamond', req: 'See it in person', earned: 'You stood in front of the real thing.', glow: 'rgba(160,210,255,.6)' },
+];
+
+const byId = Object.fromEntries(PAINTINGS.map(p => [p.id, p]));
+const src = p => `assets/paintings/${p.id}.jpg`;
+const hdSrc = p => `assets/paintings/hd/${p.id}.jpg`;
+
+/* ===================== State ===================== */
+const KEY = 'virtuoso.v1';
+const now = new Date();
+const dayIndex = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 864e5);
+const todayId = PAINTINGS[dayIndex % PAINTINGS.length].id;
+
+function seed() {
+  const ranks = { 'mona-lisa': 4, 'starry-night': 3, 'kiss': 3, 'sunflowers': 2, 'pearl-earring': 2, 'birth-venus': 2,
+    'impression-sunrise': 1, 'wanderer': 1, 'scream': 1 };
+  delete ranks[todayId];
+  return { ranks, favorite: null };
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch { S = seed(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+const rank = id => S.ranks[id] || 0;
+function setRank(id, r) { if (rank(id) >= r) return; S.ranks[id] = r; save(); renderAll(); showRankUp(id, r); }
+
+/* ===================== Helpers ===================== */
+const $ = s => document.querySelector(s);
+const ICON = {
+  lock: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>',
+  check: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.5 3 3 6-7"/></svg>',
+  x: '<svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 2l10 10M12 2 2 12"/></svg>',
+  left: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2.5 4 7l4.5 4.5"/></svg>',
+  right: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 2.5 10 7l-4.5 4.5"/></svg>',
+  frame: '<svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="4" width="20" height="20" rx="1.5"/><rect x="8" y="8" width="12" height="12" rx="1" stroke-dasharray="2 2"/></svg>',
+  pin: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8.5 10 3l7 5.5"/><path d="M4.5 8.5v7M8 8.5v7M12 8.5v7M15.5 8.5v7"/><path d="M2.5 17h15"/></svg>',
+  camera: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M2 6a1.5 1.5 0 0 1 1.5-1.5h2l1.2-2h4.6l1.2 2h2A1.5 1.5 0 0 1 16 6v7.5A1.5 1.5 0 0 1 14.5 15h-11A1.5 1.5 0 0 1 2 13.5V6Z"/><circle cx="9" cy="9.5" r="3"/></svg>',
+  search: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5"/><path d="m12 12 4 4"/></svg>',
+  zoom: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.75"/><path d="m10.5 10.5 3.5 3.5M5 7h4M7 5v4"/></svg>',
+  minus: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10"/></svg>',
+  plus: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M8 3v10"/></svg>',
+  expand: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8.5 1.5h4v4M5.5 12.5h-4v-4M12.5 1.5 8 6M1.5 12.5 6 8"/></svg>',
+};
+
+function hash(str) { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; }
+function shuffled(arr, salt) { return arr.map((v, i) => [hash(salt + i), v]).sort((a, b) => a[0] - b[0]).map(x => x[1]); }
+
+function patch(p, e, url) {
+  const sx = e.x + (e.dx || 0), sy = e.y + (e.dy || 0);
+  const px = e.w >= 100 ? 0 : sx / (100 - e.w) * 100;
+  const py = e.h >= 100 ? 0 : sy / (100 - e.h) * 100;
+  const mask = e.mask || 'radial-gradient(closest-side, #000 62%, transparent 100%)';
+  return `<div class="patch" style="left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;background-image:url('${url}');background-size:${10000 / e.w}% ${10000 / e.h}%;background-position:${px}% ${py}%;${e.filter ? `filter:${e.filter};` : ''}${e.clip ? `clip-path:${e.clip};` : ''}-webkit-mask-image:${mask};mask-image:${mask}"></div>`;
+}
+// hd: the 2000px file, used only by the zoom viewer so detail holds up when magnified
+function art(p, { fake = false, alt, hd = false } = {}) {
+  const edits = fake ? p.forgery.edits : [];
+  const flip = edits.some(e => e.type === 'flip');
+  const url = hd ? hdSrc(p) : src(p);
+  return `<div class="art" style="aspect-ratio:${p.w}/${p.h}"><div class="art-in"${flip ? ' style="transform:scaleX(-1)"' : ''}>` +
+    `<img src="${url}" alt="${alt ?? p.title}" draggable="false">${edits.filter(e => e.type !== 'flip').map(e => patch(p, e, url)).join('')}</div></div>`;
+}
+const framed = (p, r, opts) => `<div class="frame r${r}">${art(p, opts)}</div>`;
+// A painting the user can open in the zoom viewer
+function zoomable(p, inner, { fake, label } = {}) {
+  return `<button class="zoomable tap" data-zoom="${p.id}"${fake != null ? ` data-fake="${fake ? 1 : 0}"` : ''} aria-label="${label || `Zoom into ${p.title}`}">
+    ${inner}<span class="zoom-badge" aria-hidden="true">${ICON.zoom}Zoom</span></button>`;
+}
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200); }
+
+/* ===================== Shared painting detail ===================== */
+const quizState = {}; // id -> array of wrong answers tried
+
+function trackHTML(r) {
+  return `<div class="track" role="list" aria-label="Rank progress">${[1, 2, 3, 4].map(n => {
+    const cls = n <= r ? `done r${n}` : n === r + 1 ? 'next' : '';
+    return `<div class="step ${cls}" role="listitem"><div class="medal">${n <= r ? ICON.check : n === r + 1 ? `<span style="font-size:13px;font-weight:700">${n}</span>` : ICON.lock}</div>
+      <div class="lbl">${RANKS[n].name}</div><div class="req">${RANKS[n].req}</div><span class="sr">${n <= r ? 'earned' : 'not yet earned'}</span></div>`;
+  }).join('')}</div>`;
+}
+
+function detailHTML(p) {
+  const r = rank(p.id), a = ARTISTS[p.artist];
+  const opts = shuffled(p.quiz.a, p.id);
+  const wrong = quizState[p.id] || [];
+  let quiz;
+  if (r >= 2) {
+    quiz = `<div class="done-row"><span class="pip r2"></span>Answered: ${p.quiz.a[0]}</div>`;
+  } else {
+    quiz = `<div class="opts" role="group" aria-labelledby="q-${p.id}">${opts.map(o => {
+      const isWrong = wrong.includes(o);
+      return `<button class="opt${isWrong ? ' wrong' : ''}" data-quiz="${p.id}" data-ans="${encodeURIComponent(o)}"${isWrong ? ' disabled' : ''}>${isWrong ? ICON.x : ''}<span>${o}</span></button>`;
+    }).join('')}</div>${wrong.length ? `<p class="feedback bad" role="alert">Not quite. Look back at why it was painted, then try another answer.</p>` : ''}`;
+  }
+  const forgery = r >= 3
+    ? `<div class="done-row"><span class="pip r3"></span>You spotted the forgery.</div>`
+    : r === 2
+      ? `<p class="body" style="margin-top:8px">Two nearly identical versions. One is fake. Pick the real painting to earn Gold.</p><button class="btn btn-violet btn-block" data-go-forgery="${p.id}">${ICON.search}Spot the forgery</button>`
+      : `<div class="lock">${ICON.lock}<span>Answer the question above to unlock the forgery challenge.</span></div>`;
+  const diamond = r >= 4
+    ? `<div class="done-row"><span class="pip r4"></span>Captured in person at the ${p.museum}.</div>`
+    : r === 3
+      ? `<button class="btn btn-glass btn-block" data-capture="${p.id}">${ICON.camera}Capture in person</button>`
+      : `<div class="lock">${ICON.lock}<span>Reach Gold, then photograph the painting at the museum to earn Diamond.</span></div>`;
+
+  return `
+    <div class="tagline">
+      <h2 class="art-title">${p.title}</h2>
+      <div class="art-meta">${a.name}, ${p.year}<br>${p.medium}</div>
+    </div>
+    ${trackHTML(r)}
+    <div class="block"><h3 class="section">About the artist</h3><p class="body">${ARTIST_BIO[p.artist]}</p></div>
+    <div class="block"><h3 class="section">Why it was painted</h3><p class="body">${p.why}</p></div>
+    <div class="block panel" id="quiz-${p.id}">
+      <div style="display:flex;align-items:center;gap:8px" class="small"><span class="pip r2"></span>For Silver</div>
+      <h3 class="section" style="margin-top:8px" id="q-${p.id}">${p.quiz.q}</h3>${quiz}
+    </div>
+    <div class="block panel">
+      <div style="display:flex;align-items:center;gap:8px" class="small"><span class="pip r3"></span>For Gold</div>
+      <h3 class="section" style="margin-top:8px">Real or forgery?</h3>${forgery}
+    </div>
+    <div class="block panel">
+      <div style="display:flex;align-items:center;gap:8px" class="small"><span class="pip r4"></span>For Diamond</div>
+      <h3 class="section" style="margin-top:8px">Currently on view</h3>
+      <div class="museum"><div class="pin">${ICON.pin}</div><div><div class="name">${p.museum}</div><div class="small">${p.city}<br>${p.room}</div></div></div>
+      ${diamond}
+    </div>`;
+}
+
+/* ===================== Today ===================== */
+function renderToday() {
+  const p = byId[todayId], r = rank(p.id);
+  const d = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  $('#view-today').innerHTML = `
+    <header class="page-head"><h1 class="page-title">Today</h1><span class="page-aside">${d}</span></header>
+    <div class="hero">
+      <div class="hero-glow" aria-hidden="true"><i class="orbit a"></i><i class="orbit b"></i><i class="g1"></i><i class="g2"></i><i class="g3"></i></div>
+      <div class="flip${r >= 1 ? ' is-revealed' : ''}" id="flip">
+        <div class="flip-inner">
+          <div class="face front"${r >= 1 ? '' : ' aria-hidden="true"'}>${r >= 1 ? zoomable(p, framed(p, r)) : framed(p, 1)}</div>
+          <div class="face back"${r >= 1 ? ' aria-hidden="true"' : ''}>
+            <div class="card-back">
+              <div class="mystery" aria-hidden="true"><img src="${src(p)}" alt="" draggable="false"></div>
+              <div class="frost" aria-hidden="true"></div>
+              ${p.h >= p.w ? '<div class="seal" aria-hidden="true">?</div>' : ''}
+              <p class="q">A mystery painting</p>
+              <p class="small">Open it to add today’s painting to your collection at Bronze.</p>
+              <button class="btn btn-glass btn-block" id="reveal">Open painting</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="today-detail">${r >= 1 ? detailHTML(p) : `
+      <div class="tagline"><p class="body" style="color:var(--muted);max-width:30ch;margin:0 auto">Every painting can rise through four ranks. The better you know it, the higher it climbs.</p></div>
+      ${trackHTML(0)}`}</div>`;
+  $('#today-dot').hidden = r >= 1;
+}
+
+/* ===================== Gallery ===================== */
+let galleryPeriod = 'renaissance';
+function renderGallery() {
+  const total = PAINTINGS.length, got = PAINTINGS.filter(p => rank(p.id)).length;
+  const per = PERIODS.find(x => x.id === galleryPeriod);
+  const artists = Object.entries(ARTISTS).filter(([, a]) => a.period === per.id);
+  const chipX = $('#period-chips')?.scrollLeft || 0;
+  $('#view-gallery').innerHTML = `
+    <header class="page-head"><h1 class="page-title">Gallery</h1><span class="page-aside">${got} of ${total} collected</span></header>
+    <div class="chips hscroll wheel-x fade-edges" id="period-chips" role="group" aria-label="Art history period">${PERIODS.map(x => {
+      const n = PAINTINGS.filter(p => ARTISTS[p.artist].period === x.id && rank(p.id)).length;
+      return `<button class="chip" data-period="${x.id}" aria-pressed="${x.id === per.id}">${x.name}${n ? ` <span style="opacity:.6;font-weight:500">${n}</span>` : ''}</button>`;
+    }).join('')}</div>
+    <div class="period-intro"><div class="dates">${per.dates}</div><p>${per.about}</p></div>
+    ${artists.map(([aid, a]) => {
+      const works = PAINTINGS.filter(p => p.artist === aid);
+      const have = works.filter(p => rank(p.id));
+      const ordered = [...have.sort((x, y) => rank(y.id) - rank(x.id)), ...works.filter(p => !rank(p.id))];
+      return `<section class="shelf" aria-label="${a.name}">
+        <div class="shelf-head">
+          <h2 class="shelf-name">${a.name}</h2>
+          <div class="shelf-tools"><span class="shelf-count">${have.length} of ${works.length}</span>
+            <button class="icon-btn" data-scroll="${aid}" data-dir="-1" aria-label="Scroll ${a.name} left">${ICON.left}</button>
+            <button class="icon-btn" data-scroll="${aid}" data-dir="1" aria-label="Scroll ${a.name} right">${ICON.right}</button></div>
+        </div>
+        <div class="shelf-row" style="--tint:${per.tint}">
+          <div class="shelf-scroll hscroll" id="shelf-${aid}">${ordered.map(p => {
+            const r = rank(p.id);
+            if (!r) return `<div class="slot missing" role="img" aria-label="Painting not yet found">${ICON.frame}<span>Not yet found</span></div>`;
+            const wpx = Math.round(Math.min(220, Math.max(96, 144 * p.w / p.h)) + 6);
+            return `<button class="slot tap" style="width:${wpx}px" data-open="${p.id}" aria-label="${p.title}, ${RANKS[r].name}">
+              <span class="rank-tag"><span class="pip r${r}"></span>${RANKS[r].name}</span>
+              <div class="frame r${r}" style="height:100%"><div class="art" style="height:100%"><div class="art-in"><img src="${src(p)}" alt="" draggable="false"></div></div></div></button>`;
+          }).join('')}</div>
+        </div>
+      </section>`;
+    }).join('')}`;
+  restoreSlider($('#period-chips'), chipX);
+  updateShelfArrows();
+}
+// Keep a slider where the user left it across re-renders, and make sure the selected item is in view
+function restoreSlider(el, x) {
+  if (!el) return;
+  el.scrollLeft = x;
+  const a = el.querySelector('[aria-pressed="true"]');
+  if (a) {
+    const left = a.offsetLeft - el.offsetLeft - 16, right = left + a.offsetWidth + 56 - el.clientWidth;
+    if (el.scrollLeft > left) el.scrollTo({ left, behavior: 'smooth' });
+    else if (el.scrollLeft < right) el.scrollTo({ left: right, behavior: 'smooth' });
+  }
+  updateFade(el);
+}
+function updateFade(el) {
+  if (el?.classList.contains('fade-edges')) el.classList.toggle('at-end', el.scrollLeft >= el.scrollWidth - el.clientWidth - 2);
+}
+function updateShelfArrows() {
+  document.querySelectorAll('.shelf-scroll').forEach(el => {
+    const aid = el.id.slice(6), max = el.scrollWidth - el.clientWidth - 2;
+    const [l, r] = document.querySelectorAll(`[data-scroll="${aid}"]`);
+    if (l) l.disabled = el.scrollLeft <= 2;
+    if (r) r.disabled = el.scrollLeft >= max;
+  });
+}
+
+/* ===================== Forgery ===================== */
+const F = { id: null, fakeLeft: hash(String(dayIndex)) % 2 === 0, result: null, choice: null, lb: 0 };
+function eligible() { return PAINTINGS.filter(p => rank(p.id) === 2); }
+function renderForgery() {
+  const list = eligible();
+  const v = $('#view-forgery');
+  if (F.result === 'right' && F.id && rank(F.id) >= 3) {
+    // keep showing the solved painting until the user moves on
+  } else if (!list.find(p => p.id === F.id)) { F.id = list[0]?.id || null; F.result = null; }
+  const head = `<header class="page-head"><h1 class="page-title">Forgery</h1></header>`;
+  if (!F.id) {
+    v.innerHTML = head + `<div class="empty"><div class="glyph">${ICON.search}</div><h3>Nothing to inspect yet</h3>
+      <p>Answer a painting’s question to reach Silver. It will appear here for a forgery check.</p>
+      <button class="btn btn-violet" data-tabgo="today">Go to today’s painting</button></div>`;
+    return;
+  }
+  const p = byId[F.id];
+  const pickX = $('#pick-row')?.scrollLeft || 0;
+  const sides = F.fakeLeft ? [true, false] : [false, true];
+  const solved = F.result != null;
+  const pickRow = list.length > 1 || (solved && list.length) ? `<div class="pick-row hscroll wheel-x fade-edges" id="pick-row" role="group" aria-label="Paintings ready for a forgery check">${
+    [...(list.find(x => x.id === p.id) ? [] : [p]), ...list].map(x => `<button class="pick tap" data-pick="${x.id}" aria-pressed="${x.id === p.id}"><img src="${src(x)}" alt="">${x.title}</button>`).join('')}</div>` : '';
+  v.innerHTML = head + `
+    <p class="lede">One of these is a fake. Pick the authentic painting to earn Gold.</p>
+    ${pickRow}
+    <h2 class="section" style="margin-bottom:16px">${p.title}</h2>
+    <div class="versus">${sides.map((fake, i) => {
+      const L = 'AB'[i];
+      const state = solved ? (fake ? ' is-fake' : ' is-right') : '';
+      const stamp = solved ? (fake ? '<span class="stamp fake">Forgery</span>' : '<span class="stamp real">Authentic</span>') : '';
+      return `<div class="candidate${state}">${stamp}
+        <button class="tap" style="width:100%" data-inspect="${i}" aria-label="Inspect painting ${L}"><div class="frame">${art(p, { fake, alt: 'Painting ' + L })}</div></button>
+        <div class="letter"><span>Painting ${L}</span><span class="small" style="display:flex;gap:4px;align-items:center">${ICON.expand}Inspect</span></div></div>`;
+    }).join('')}</div>
+    ${!solved ? `<div class="block" style="margin-top:24px"><p class="small" style="margin:0 0 12px">Tap a painting to look closer, then choose the one you believe is real.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><button class="btn btn-quiet" data-choose="0">A is real</button><button class="btn btn-quiet" data-choose="1">B is real</button></div></div>` : ''}
+    ${solved ? `<div class="panel result fade-in" role="status">
+      <h3>${F.result === 'right' ? 'You found the real one' : 'That one is the forgery'}</h3>
+      <p class="body">${p.forgery.tell}</p>
+      ${F.result === 'right'
+        ? `<button class="btn btn-quiet btn-block" data-open="${p.id}">View ${p.title}</button>`
+        : `<button class="btn btn-violet btn-block" id="retry">Try again</button>`}
+    </div>` : ''}`;
+  restoreSlider($('#pick-row'), pickX);
+}
+function chooseForgery(i) {
+  const p = byId[F.id];
+  const pickedFake = (i === 0) === F.fakeLeft;
+  F.result = pickedFake ? 'wrong' : 'right';
+  closeLightbox();
+  renderForgery();
+  if (!pickedFake) setRank(p.id, 3);
+  $('#view-forgery').querySelector('.result')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function openLightbox(i) {
+  F.lb = i;
+  const p = byId[F.id];
+  const fake = (i === 0) === F.fakeLeft;
+  const lb = $('#lightbox');
+  lb.innerHTML = `<div class="lb-top"><span class="page-aside">Painting ${'AB'[i]}</span><button class="icon-btn" id="lb-close" aria-label="Close">${ICON.x}</button></div>
+    <div class="lb-stage"><div style="width:100%;max-width:${Math.min(361, 520 * p.w / p.h)}px">${zoomable(p, `<div class="frame">${art(p, { fake, alt: 'Painting ' + 'AB'[i] })}</div>`, { fake, label: `Zoom into painting ${'AB'[i]}` })}</div></div>
+    <div class="seg" role="group" aria-label="Switch painting"><button data-lb="0" aria-pressed="${i === 0}">Painting A</button><button data-lb="1" aria-pressed="${i === 1}">Painting B</button></div>
+    ${F.result ? '' : `<button class="btn btn-glass btn-block" data-choose="${i}">${'AB'[i]} is the real painting</button>`}
+    <p class="small" style="text-align:center;margin:12px 0 0">Switch between A and B, or zoom in to spot what changed.</p>`;
+  lb.setAttribute('aria-label', `Inspect painting ${'AB'[i]}`);
+  const wasOpen = lb.classList.contains('on');
+  lb.classList.add('on');
+  pushLayer(lb);
+  // Switching between A and B keeps focus on the switch instead of jumping back to Close
+  (wasOpen ? lb.querySelector(`[data-lb="${i}"]`) : $('#lb-close')).focus();
+}
+function closeLightbox() { $('#lightbox').classList.remove('on'); popLayer($('#lightbox')); }
+
+/* ===================== Profile ===================== */
+function renderProfile() {
+  const owned = PAINTINGS.filter(p => rank(p.id));
+  const counts = [1, 2, 3, 4].map(n => owned.filter(p => rank(p.id) === n).length);
+  const tot = owned.length || 1;
+  const byArtist = Object.keys(ARTISTS).map(aid => {
+    const ps = owned.filter(p => p.artist === aid);
+    return { aid, n: ps.length, score: ps.reduce((s, p) => s + rank(p.id), 0), ps };
+  }).sort((a, b) => b.n - a.n || b.score - a.score);
+  const top = byArtist[0];
+  const fav = S.favorite ? ARTISTS[S.favorite] : null;
+  const favWorks = S.favorite ? PAINTINGS.filter(p => p.artist === S.favorite && rank(p.id)) : [];
+  $('#view-profile').innerHTML = `
+    <header class="page-head"><h1 class="page-title">Profile</h1></header>
+    <div class="panel">
+      <div class="found"><span class="n">${owned.length}</span><span class="of">of ${PAINTINGS.length}<br>paintings found</span></div>
+      <div class="ratio" role="img" aria-label="Rank ratio: ${counts.map((c, i) => `${c} ${RANKS[i + 1].name}`).join(', ')}">
+        ${counts.map((c, i) => c ? `<i class="r${i + 1}" style="flex:${c}"></i>` : '').join('')}
+      </div>
+      <div class="rank-grid">${counts.map((c, i) => `<div class="rank-cell"><span class="pip r${i + 1}" style="width:14px;height:14px"></span>
+        <div class="count">${c}</div><div class="nm">${RANKS[i + 1].name}</div><div class="pct">${Math.round(c / tot * 100)}%</div></div>`).join('')}</div>
+    </div>
+    <div class="row-list">
+      <div class="row">
+        <div class="grow"><div class="k">Most collected artist</div><div class="v">${top && top.n ? ARTISTS[top.aid].name : 'None yet'}</div>
+          ${top && top.n ? `<div class="small">${top.n} of ${PAINTINGS.filter(p => p.artist === top.aid).length} paintings</div>` : ''}</div>
+        <div class="thumbs">${(top?.ps || []).map(p => `<img src="${src(p)}" alt="">`).join('')}</div>
+      </div>
+      <button class="row tap" id="fav-btn" aria-haspopup="dialog">
+        <div class="grow"><div class="k">Favorite artist</div><div class="v">${fav ? fav.name : 'Choose an artist'}</div>
+          ${fav ? `<div class="small">${favWorks.length ? `${favWorks.length} collected` : 'None collected yet'}</div>` : ''}</div>
+        <span style="color:var(--muted)">${ICON.right}</span>
+      </button>
+    </div>`;
+}
+
+/* ===================== Overlays ===================== */
+let sheetMode = null;
+function openSheet(title, html, short = false) {
+  $('#sheet-title').textContent = title;
+  $('#sheet-body').innerHTML = html;
+  $('#sheet-body').scrollTop = 0;
+  $('#sheet').classList.toggle('short', short);
+  $('#sheet').setAttribute('aria-label', title);
+  const wasOpen = $('#sheet').classList.contains('on');
+  $('#sheet').classList.add('on'); $('#scrim').classList.add('on');
+  pushLayer($('#sheet'));
+  if (!wasOpen) $('#sheet-close').focus();
+}
+function closeSheet() { $('#sheet').classList.remove('on'); $('#scrim').classList.remove('on'); sheetMode = null; popLayer($('#sheet')); }
+function openPainting(id) {
+  sheetMode = id;
+  const p = byId[id];
+  openSheet(PERIODS.find(x => x.id === ARTISTS[p.artist].period).name,
+    `<div style="max-width:${Math.min(300, 360 * p.w / p.h)}px;margin:8px auto 0">${zoomable(p, framed(p, rank(id)))}</div>${detailHTML(p)}`);
+  $('#sheet').setAttribute('aria-label', p.title);
+}
+function openFavorite() {
+  sheetMode = 'fav';
+  openSheet('Favorite artist', `<h2 class="section" style="margin:4px 0 16px">Who do you love most?</h2>
+    <div class="opts" style="margin-top:0">${Object.entries(ARTISTS).map(([aid, a]) =>
+      `<button class="opt" data-fav="${aid}">${S.favorite === aid ? ICON.check : '<span style="width:16px"></span>'}<span style="flex:1">${a.name}</span><span class="small">${PERIODS.find(x => x.id === a.period).name}</span></button>`).join('')}</div>`, true);
+}
+
+function showRankUp(id, r) {
+  const p = byId[id], R = RANKS[r];
+  const m = $('#modal');
+  m.innerHTML = `<div class="modal-card" style="--glow:${R.glow}"><div class="burst"></div>
+    ${framed(p, r)}
+    <h3>${R.name} earned</h3><p>${R.earned}<br><span style="color:var(--text)">${p.title}</span></p>
+    <button class="btn btn-glass btn-block" id="modal-ok">Continue</button></div>`;
+  m.setAttribute('aria-label', `${R.name} earned`);
+  requestAnimationFrame(() => m.classList.add('on'));
+  pushLayer(m);
+  setTimeout(() => $('#modal-ok')?.focus(), 50);
+}
+function closeModal() { $('#modal').classList.remove('on'); popLayer($('#modal')); }
+
+function openCamera(id) {
+  const p = byId[id];
+  const c = $('#camera');
+  c.innerHTML = `<div class="cam-wall"></div><div class="cam-light"></div>
+    <div class="cam-piece">${art(p)}</div>
+    <div class="brackets" id="brackets"><i></i><i></i><i></i><i></i></div>
+    <div class="cam-top"><div class="cam-hint"><strong>${p.museum}</strong><br>Frame ${p.title} inside the corners.</div>
+      <button class="icon-btn" id="cam-close" aria-label="Close camera" style="background:rgba(0,0,0,.55)">${ICON.x}</button></div>
+    <div class="cam-bottom"><div class="small" id="cam-status" style="color:#fff;opacity:.8">Simulated capture for this prototype</div>
+      <button class="shutter" id="shutter" aria-label="Take photo"></button></div>
+    <div class="flash" id="flash"></div>`;
+  c.dataset.id = id;
+  c.classList.add('on');
+  pushLayer(c);
+  $('#shutter').focus();
+}
+function closeCamera() { $('#camera').classList.remove('on'); popLayer($('#camera')); }
+function capture() {
+  const c = $('#camera'), id = c.dataset.id;
+  $('#shutter').disabled = true;
+  $('#flash').classList.add('go');
+  $('#brackets').classList.add('locked');
+  $('#cam-status').textContent = 'Painting matched';
+  setTimeout(() => { closeCamera(); closeSheet(); setRank(id, 4); }, 900);
+}
+
+/* ===================== Modal layers =====================
+   Each open overlay is pushed onto a stack. Everything outside the top layer is made inert,
+   so keyboard and screen-reader focus stays inside it, and focus returns to whatever opened it. */
+const layers = [];
+let lastActivator = null; // the control that was just tapped; Safari does not focus buttons on click
+function pushLayer(el) {
+  if (layers.some(l => l.el === el)) return syncInert();
+  const opener = lastActivator?.isConnected && !el.contains(lastActivator) ? lastActivator : document.activeElement;
+  layers.push({ el, opener });
+  syncInert();
+}
+function popLayer(el) {
+  const i = layers.findIndex(l => l.el === el);
+  if (i < 0) return;
+  const [{ opener }] = layers.splice(i, 1);
+  syncInert();
+  if (i === layers.length) restoreFocus(opener);
+}
+function syncInert() {
+  const top = layers[layers.length - 1]?.el;
+  const onboarding = !$('#onboard').hidden && !$('#onboard').classList.contains('out');
+  for (const child of $('#screen').children) {
+    // The scrim belongs to the sheet: tapping it closes the sheet
+    if (child === top || (child.id === 'scrim' && top?.id === 'sheet')) { child.inert = false; continue; }
+    child.inert = top ? true : (onboarding && child !== $('#onboard'));
+  }
+  if (top) top.inert = false;
+}
+function restoreFocus(opener) {
+  if (opener && opener.isConnected && !opener.closest('[inert]') && opener.offsetParent !== null) return opener.focus();
+  // The opener was re-rendered (for example after a rank-up): fall back to the painting title or page heading
+  const host = layers[layers.length - 1]?.el || $(`#view-${tab}`);
+  const target = host.querySelector('.art-title') || host.querySelector('h1, h2');
+  if (target) { target.tabIndex = -1; target.focus({ preventScroll: true }); }
+}
+
+/* ===================== Zoom viewer ===================== */
+const Z = { id: null, fake: false, s: 1, x: 0, y: 0, bw: 0, bh: 0, pointers: new Map(), start: null, moved: false };
+const ZMIN = 1, ZMAX = 5;
+function openZoom(id, fake) {
+  const p = byId[id];
+  Object.assign(Z, { id, fake, s: 1, x: 0, y: 0 });
+  const z = $('#zoomer');
+  z.setAttribute('aria-label', `Zoom: ${fake == null ? p.title : 'painting under inspection'}`);
+  z.innerHTML = `
+    <div class="z-top">
+      <h2 class="z-title">${fake == null ? p.title : 'Look closely'}</h2>
+      <button class="icon-btn" id="z-close" aria-label="Close zoom">${ICON.x}</button>
+    </div>
+    <div class="z-stage" id="z-stage" role="img" aria-label="${fake == null ? p.title : 'Painting being inspected'}, zoomable">
+      <div class="z-canvas" id="z-canvas">${art(p, { fake: !!fake, alt: '', hd: true })}</div>
+    </div>
+    <div class="z-controls">
+      <button class="icon-btn z-btn" data-zstep="-1" aria-label="Zoom out">${ICON.minus}</button>
+      <label class="sr" for="z-range">Zoom level</label>
+      <input type="range" id="z-range" min="100" max="${ZMAX * 100}" step="10" value="100" aria-valuetext="100%">
+      <button class="icon-btn z-btn" data-zstep="1" aria-label="Zoom in">${ICON.plus}</button>
+      <output id="z-level" class="z-level" for="z-range">100%</output>
+      <button class="btn btn-quiet z-reset" id="z-reset">Reset</button>
+    </div>
+    <p class="z-hint" id="z-hint">Pinch, scroll or use the slider to zoom. Tap a spot to zoom in on it, and drag to move around. Arrow keys pan.</p>`;
+  z.classList.add('on');
+  pushLayer(z);
+  requestAnimationFrame(() => { zoomLayout(); $('#z-close').focus(); });
+}
+function closeZoom() { $('#zoomer').classList.remove('on'); popLayer($('#zoomer')); }
+function zoomLayout() {
+  const p = byId[Z.id], st = $('#z-stage');
+  if (!p || !st) return;
+  const sw = st.clientWidth, sh = st.clientHeight, ar = p.w / p.h;
+  Z.bw = Math.min(sw, sh * ar); Z.bh = Z.bw / ar;
+  const c = $('#z-canvas');
+  c.style.width = Z.bw + 'px'; c.style.height = Z.bh + 'px';
+  c.style.left = (sw - Z.bw) / 2 + 'px'; c.style.top = (sh - Z.bh) / 2 + 'px';
+  zoomApply(false);
+}
+function zoomClamp() {
+  const st = $('#z-stage');
+  const mx = Math.max(0, (Z.bw * Z.s - st.clientWidth) / 2), my = Math.max(0, (Z.bh * Z.s - st.clientHeight) / 2);
+  Z.x = Math.min(mx, Math.max(-mx, Z.x)); Z.y = Math.min(my, Math.max(-my, Z.y));
+}
+function zoomApply(animate = true) {
+  zoomClamp();
+  const c = $('#z-canvas');
+  c.classList.toggle('anim', animate);
+  c.style.transform = `translate(${Z.x}px, ${Z.y}px) scale(${Z.s})`;
+  const pct = Math.round(Z.s * 100) + '%';
+  $('#z-range').value = Math.round(Z.s * 100);
+  $('#z-range').setAttribute('aria-valuetext', pct);
+  $('#z-level').textContent = pct;
+  $('#z-stage').classList.toggle('zoomed', Z.s > 1.01);
+  $('[data-zstep="-1"]').disabled = Z.s <= ZMIN + 0.001;
+  $('[data-zstep="1"]').disabled = Z.s >= ZMAX - 0.001;
+}
+// Zoom to scale s while keeping the point (cx, cy), measured from the stage center, fixed under the finger
+function zoomTo(s, cx = 0, cy = 0, animate = true) {
+  s = Math.min(ZMAX, Math.max(ZMIN, s));
+  Z.x = cx - (cx - Z.x) * s / Z.s; Z.y = cy - (cy - Z.y) * s / Z.s; Z.s = s;
+  zoomApply(animate);
+}
+function stagePoint(e) {
+  const r = $('#z-stage').getBoundingClientRect(), k = r.width / $('#z-stage').offsetWidth || 1;
+  return { x: (e.clientX - r.left) / k - r.width / k / 2, y: (e.clientY - r.top) / k - r.height / k / 2 };
+}
+function zoomPointerDown(e) {
+  if (!e.target.closest('#z-stage')) return;
+  e.preventDefault();
+  $('#z-stage').setPointerCapture(e.pointerId);
+  Z.pointers.set(e.pointerId, stagePoint(e));
+  Z.moved = false;
+  Z.start = { x: Z.x, y: Z.y, s: Z.s, pts: [...Z.pointers.values()].map(p => ({ ...p })) };
+}
+function zoomPointerMove(e) {
+  if (!Z.pointers.has(e.pointerId)) return;
+  Z.pointers.set(e.pointerId, stagePoint(e));
+  const pts = [...Z.pointers.values()], st = Z.start;
+  if (pts.length === 1 && st.pts.length === 1) {
+    const dx = pts[0].x - st.pts[0].x, dy = pts[0].y - st.pts[0].y;
+    if (Math.hypot(dx, dy) > 6) Z.moved = true;
+    if (Z.moved) { Z.x = st.x + dx; Z.y = st.y + dy; zoomApply(false); }
+  } else if (pts.length >= 2 && st.pts.length >= 2) {
+    Z.moved = true;
+    const d0 = Math.hypot(st.pts[0].x - st.pts[1].x, st.pts[0].y - st.pts[1].y);
+    const d1 = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    Z.x = st.x; Z.y = st.y; Z.s = st.s;
+    zoomTo(st.s * d1 / d0, mid.x, mid.y, false);
+  }
+}
+function zoomPointerUp(e) {
+  if (!Z.pointers.has(e.pointerId)) return;
+  const pt = Z.pointers.get(e.pointerId);
+  Z.pointers.delete(e.pointerId);
+  if (!Z.moved && Z.pointers.size === 0) {
+    // A tap is the single-pointer alternative to pinching and dragging: zoom in on the spot, or center it if already zoomed
+    if (Z.s < 1.5) zoomTo(2.5, pt.x, pt.y);
+    else { Z.x -= pt.x; Z.y -= pt.y; zoomApply(true); }
+  }
+  // Re-base any remaining finger so a pinch that becomes a drag doesn't jump
+  Z.start = { x: Z.x, y: Z.y, s: Z.s, pts: [...Z.pointers.values()].map(p => ({ ...p })) };
+}
+
+/* ===================== Navigation ===================== */
+let tab = 'today';
+function go(t) {
+  tab = t;
+  document.querySelectorAll('.tab').forEach(b => b.dataset.tab === t ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== 'view-' + t);
+  $('#view-' + t).scrollTop = 0;
+  if (t === 'gallery') { updateShelfArrows(); restoreSlider($('#period-chips'), $('#period-chips').scrollLeft); }
+  if (t === 'forgery') restoreSlider($('#pick-row'), $('#pick-row')?.scrollLeft || 0);
+}
+function renderAll() {
+  const keep = { today: $('#view-today').scrollTop, forgery: $('#view-forgery').scrollTop };
+  renderToday(); renderGallery(); renderForgery(); renderProfile();
+  $('#view-today').scrollTop = keep.today; $('#view-forgery').scrollTop = keep.forgery;
+  if (sheetMode && byId[sheetMode] && $('#sheet').classList.contains('on')) {
+    const st = $('#sheet-body').scrollTop; openPainting(sheetMode); $('#sheet-body').scrollTop = st;
+  }
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, [data-open]');
+  if (!t) { if (e.target.id === 'scrim') closeSheet(); return; }
+  lastActivator = t;
+  const d = t.dataset;
+  if (t.id === 'start') return finishOnboarding();
+  if (d.zoom) return openZoom(d.zoom, d.fake != null ? d.fake === '1' : null);
+  if (t.id === 'z-close') return closeZoom();
+  if (d.zstep) return zoomTo(Z.s * (+d.zstep > 0 ? 1.5 : 1 / 1.5), 0, 0);
+  if (t.id === 'z-reset') { Z.x = 0; Z.y = 0; return zoomTo(1); }
+  if (d.tab) return go(d.tab);
+  if (d.tabgo) return go(d.tabgo);
+  if (t.id === 'reveal') {
+    $('#flip').classList.add('is-revealed');
+    setTimeout(() => setRank(todayId, 1), 650);
+    return;
+  }
+  if (d.quiz) {
+    const p = byId[d.quiz], ans = decodeURIComponent(d.ans);
+    if (ans === p.quiz.a[0]) { delete quizState[p.id]; setRank(p.id, 2); }
+    else { (quizState[p.id] ||= []).push(ans); renderAll(); }
+    return;
+  }
+  if (d.goForgery) { closeSheet(); F.id = d.goForgery; F.result = null; renderForgery(); return go('forgery'); }
+  if (d.capture) return openCamera(d.capture);
+  if (d.open) return openPainting(d.open);
+  if (d.period) { galleryPeriod = d.period; renderGallery(); return; }
+  if (d.scroll) { const el = $('#shelf-' + d.scroll); el.scrollBy({ left: +d.dir * 150 }); return; }
+  if (d.pick) { F.id = d.pick; F.result = null; F.fakeLeft = hash(d.pick + dayIndex) % 2 === 0; return renderForgery(); }
+  if (d.inspect) return openLightbox(+d.inspect);
+  if (d.lb) return openLightbox(+d.lb);
+  if (d.choose) return chooseForgery(+d.choose);
+  if (t.id === 'retry') { F.result = null; F.fakeLeft = !F.fakeLeft; renderForgery(); $('#view-forgery').scrollTop = 0; return; }
+  if (t.id === 'lb-close') return closeLightbox();
+  if (t.id === 'fav-btn') return openFavorite();
+  if (d.fav) { S.favorite = d.fav; save(); closeSheet(); renderProfile(); toast(`${ARTISTS[d.fav].name} is your favorite`); return; }
+  if (t.id === 'sheet-close') return closeSheet();
+  if (t.id === 'modal-ok') return closeModal();
+  if (t.id === 'cam-close') return closeCamera();
+  if (t.id === 'shutter') return capture();
+});
+document.addEventListener('scroll', e => {
+  if (e.target.classList?.contains('shelf-scroll')) updateShelfArrows();
+  updateFade(e.target);
+}, true);
+
+/* ===================== Sliders: drag with a mouse, wheel or trackpad ===================== */
+let drag = null, swallowClick = false;
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' || e.button !== 0) return;
+  const el = e.target.closest('.hscroll');
+  if (el) drag = { el, x: e.clientX, left: el.scrollLeft, id: e.pointerId, moved: false,
+    scale: el.getBoundingClientRect().width / el.offsetWidth || 1 };
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = (e.clientX - drag.x) / drag.scale;
+  if (!drag.moved && Math.abs(dx) > 5) { drag.moved = true; drag.el.classList.add('dragging'); drag.el.setPointerCapture?.(drag.id); }
+  if (drag.moved) drag.el.scrollLeft = drag.left - dx;
+});
+const endDrag = () => {
+  if (!drag) return;
+  if (drag.moved) { swallowClick = true; setTimeout(() => { swallowClick = false; }, 50); }
+  drag.el.classList.remove('dragging');
+  drag = null;
+};
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
+// A drag should not also count as a tap on the chip it started on
+document.addEventListener('click', e => { if (swallowClick) { e.stopPropagation(); e.preventDefault(); swallowClick = false; } }, true);
+// Vertical wheel scrolls the period and painting filters sideways while they still have room to move
+document.addEventListener('wheel', e => {
+  const el = e.target.closest('.wheel-x');
+  if (!el || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  const max = el.scrollWidth - el.clientWidth;
+  if ((e.deltaY > 0 && el.scrollLeft < max - 1) || (e.deltaY < 0 && el.scrollLeft > 0)) {
+    el.scrollLeft += e.deltaY; e.preventDefault();
+  }
+}, { passive: false });
+
+/* ===================== Onboarding ===================== */
+function finishOnboarding() {
+  S.onboarded = true; save();
+  const ob = $('#onboard');
+  ob.classList.add('out');
+  syncInert();
+  setTimeout(() => { ob.hidden = true; OB.stop(); $('#reveal')?.focus(); }, 700);
+}
+
+/* A slow, endless drift of paintings waiting to be collected. Cards rise as they pass the center,
+   like the arc in the image_6 reference. Only transform is animated. */
+const OB = (() => {
+  const picks = ['mona-lisa', 'starry-night', 'pearl-earring', 'kiss', 'birth-venus', 'scream', 'las-meninas',
+    'cafe-terrace', 'wanderer', 'arnolfini', 'ballet-class', 'monet-bridge', 'calling-matthew', 'parasol'].map(id => byId[id]);
+  const CW = 214, CH = 300, GAP = 20, SPEED = 16; // px per second
+  const span = picks.length * (CW + GAP);
+  let cards = [], t = 0, last = 0, raf = 0, playing = false;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const gallery = $('#ob-gallery'), btn = $('#ob-pause');
+
+  gallery.setAttribute('aria-label', `A slowly moving gallery of paintings you can collect, including ${picks.slice(0, 5).map(p => p.title).join(', ')} and more.`);
+  gallery.insertAdjacentHTML('beforeend', picks.map(p => `
+    <div class="ob-card" aria-hidden="true">
+      <img src="${src(p)}" alt="" draggable="false">
+    </div>`).join(''));
+  cards = [...gallery.querySelectorAll('.ob-card')];
+
+  function layout() {
+    const vw = gallery.clientWidth, vh = gallery.clientHeight, mid = vw / 2;
+    cards.forEach((el, i) => {
+      // Wrap each card around an endless loop that starts just off the left edge
+      const x = ((i * (CW + GAP) - t * SPEED) % span + span) % span - (CW + GAP) * 2;
+      const d = Math.max(-1.6, Math.min(1.6, (x + CW / 2 - mid) / (vw / 2)));
+      const lift = Math.pow(Math.abs(d), 1.4) * 56;                 // the arc: center card sits highest
+      const bob = Math.sin(t * 0.6 + i * 1.3) * 3;                    // a breath of float
+      const s = 1.06 - Math.min(1, Math.abs(d)) * 0.14;
+      el.style.transform = `translate3d(${x}px, ${vh / 2 - CH / 2 - 6 + lift + bob}px, 0) scale(${s})`;
+      el.style.zIndex = String(100 - Math.round(Math.abs(d) * 50));
+    });
+  }
+  function frame(now) {
+    if (!playing) return;
+    t += Math.min(0.05, (now - last) / 1000); last = now;
+    layout();
+    raf = requestAnimationFrame(frame);
+  }
+  function setPlaying(on) {
+    playing = on;
+    btn.setAttribute('aria-pressed', String(!on));
+    btn.setAttribute('aria-label', on ? 'Pause the moving gallery' : 'Play the moving gallery');
+    btn.innerHTML = on
+      ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="1"/><rect x="9.5" y="2.5" width="3" height="11" rx="1"/></svg>'
+      : '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.5 2.8v10.4a.6.6 0 0 0 .9.5l8.2-5.2a.6.6 0 0 0 0-1L5.4 2.3a.6.6 0 0 0-.9.5Z"/></svg>';
+    cancelAnimationFrame(raf);
+    if (on) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  }
+  btn.addEventListener('click', () => setPlaying(!playing));
+  t = 4.2; // open on a balanced arrangement
+  return {
+    start() { layout(); setPlaying(!reduce.matches); },
+    stop() { setPlaying(false); },
+    layout,
+  };
+})();
+
+if (!S.onboarded) {
+  $('#onboard').hidden = false;
+  syncInert();
+  OB.start();
+  $('#start').focus();
+}
+document.addEventListener('keydown', e => {
+  const zooming = $('#zoomer').classList.contains('on');
+  if (zooming && e.target.id !== 'z-range') {
+    const step = 48, k = e.key;
+    if (k === '+' || k === '=') { e.preventDefault(); return zoomTo(Z.s * 1.5); }
+    if (k === '-' || k === '_') { e.preventDefault(); return zoomTo(Z.s / 1.5); }
+    if (k === '0') { e.preventDefault(); Z.x = 0; Z.y = 0; return zoomTo(1); }
+    const pan = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[k];
+    if (pan && Z.s > 1) { e.preventDefault(); Z.x += pan[0]; Z.y += pan[1]; return zoomApply(true); }
+  }
+  if (e.key !== 'Escape') return;
+  const top = layers[layers.length - 1]?.el;
+  if (!top) return;
+  e.preventDefault();
+  ({ zoomer: closeZoom, modal: closeModal, camera: closeCamera, lightbox: closeLightbox, sheet: closeSheet })[top.id]?.();
+});
+document.addEventListener('input', e => { if (e.target.id === 'z-range') zoomTo(e.target.value / 100, 0, 0, false); });
+document.addEventListener('pointerdown', zoomPointerDown);
+document.addEventListener('pointermove', zoomPointerMove);
+document.addEventListener('pointerup', zoomPointerUp);
+document.addEventListener('pointercancel', zoomPointerUp);
+document.addEventListener('wheel', e => {
+  if (!e.target.closest('#z-stage')) return;
+  e.preventDefault();
+  const pt = stagePoint(e);
+  zoomTo(Z.s * Math.exp(-e.deltaY * 0.0022), pt.x, pt.y, false);
+}, { passive: false });
+
+// Show the device frame only when it fits at a readable size. On phones, or when browser zoom
+// (WCAG 1.4.4 / 1.4.10) would shrink the frame, the app fills the window and text grows with zoom.
+function fit() {
+  const s = Math.min(1, (innerHeight - 70) / 876, (innerWidth - 40) / 417);
+  const bleed = innerWidth <= 500 || s < 0.8;
+  document.documentElement.classList.toggle('bleed', bleed);
+  $('#device').style.setProperty('--fit', bleed ? 1 : s);
+  if ($('#zoomer').classList.contains('on')) zoomLayout();
+}
+addEventListener('resize', fit); fit();
+renderAll();
+</script>
+</body>
+</html>
