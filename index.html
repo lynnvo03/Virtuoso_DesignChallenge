@@ -98,16 +98,12 @@
     transform: translateX(-50%); border-radius: 3px; background: var(--text); opacity: .85; z-index: 70;
     pointer-events: none;
   }
-  .caption {
-    position: fixed; bottom: 18px; left: 0; right: 0; text-align: center;
-    color: var(--faint); font-size: 13px;
-  }
 
   /* Full-bleed mode: on phones, and on desktop whenever browser zoom leaves no room for the device frame */
   html.bleed .stage { display: block; }
   html.bleed .device { width: 100%; height: 100%; border-radius: 0; box-shadow: none; transform: none; }
   html.bleed .screen { border-radius: 0; }
-  html.bleed .island, html.bleed .statusbar, html.bleed .home-indicator, html.bleed .caption { display: none; }
+  html.bleed .island, html.bleed .statusbar, html.bleed .home-indicator { display: none; }
   :root { --safe-top: 59px; --safe-bottom: 34px; }
   html.bleed { --safe-top: max(env(safe-area-inset-top), 20px); --safe-bottom: max(env(safe-area-inset-bottom), 12px); }
 
@@ -663,7 +659,6 @@
       <div class="home-indicator"></div>
     </div>
   </div>
-  <div class="caption">Virtuoso prototype, sized for iPhone 15</div>
 </div>
 
 <script>
