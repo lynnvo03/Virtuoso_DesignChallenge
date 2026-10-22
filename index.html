@@ -373,6 +373,7 @@
   .pick[aria-pressed="true"] { color: var(--text); border-color: var(--silver); background: rgba(211,217,228,.1); }
 
   .versus { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); align-items: start; }
+  .versus.stack { grid-template-columns: 1fr; gap: var(--s4); }
   .candidate { position: relative; }
   .candidate .frame { background: rgba(243,236,220,.18); }
   .candidate .letter { display: flex; align-items: center; justify-content: space-between; margin-top: var(--s2); font-size: 14px; font-weight: 600; }
@@ -566,12 +567,10 @@
   .ob-gallery { position: absolute; left: 0; right: 0; top: calc(var(--safe-top) - 12px); height: min(560px, calc(100% - 300px)); z-index: -1; overflow: hidden;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
     mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
-  .ob-card { position: absolute; left: 0; top: 0; width: 214px; height: 300px; border-radius: 28px; overflow: hidden; will-change: transform;
+  .ob-card { position: absolute; left: 0; top: 0; width: 240px; height: 336px; border-radius: 30px; overflow: hidden; will-change: transform;
     box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 28px 40px -18px rgba(6,2,22,.9), 0 10px 30px -12px rgba(120,70,240,.55); }
   .ob-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .ob-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(to top, rgba(0,0,0,.3), transparent 40%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
-  .ob-pause { position: absolute; top: calc(var(--safe-top) + var(--s2)); right: var(--gutter); z-index: 2;
-    width: 44px; height: 44px; background: rgba(18,10,43,.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
   .onboard h1 { font-family: var(--display); font-weight: 400; font-size: 38px; line-height: 1.08; letter-spacing: -0.03em; margin: 0; }
   .onboard p { color: rgba(243,236,220,.82); font-size: 16px; line-height: 1.6; margin: var(--s3) auto var(--s6); max-width: 30ch; }
   .btn-light { background: var(--text); color: #1A0F3A; min-height: 56px;
@@ -640,8 +639,7 @@
         <div class="ob-fade" aria-hidden="true"></div>
         <div class="ob-gallery" id="ob-gallery" role="img">
         </div>
-        <button class="icon-btn ob-pause" id="ob-pause" aria-pressed="false" aria-label="Pause the moving gallery"></button>
-        <h1>Welcome to Virtuoso</h1>
+        <h1>Virtuoso</h1>
         <p>Discover a famous painting every day, learn its story, and collect it from Bronze to Diamond.</p>
         <button class="btn btn-light btn-block" id="start">Start collecting</button>
       </section>
@@ -942,7 +940,6 @@ const src = p => `assets/paintings/${p.id}.jpg`;
 const hdSrc = p => `assets/paintings/hd/${p.id}.jpg`;
 
 /* ===================== State ===================== */
-const KEY = 'virtuoso.v1';
 const now = new Date();
 const dayIndex = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 864e5);
 const todayId = PAINTINGS[dayIndex % PAINTINGS.length].id;
@@ -953,11 +950,11 @@ function seed() {
   delete ranks[todayId];
   return { ranks, favorite: null };
 }
-let S;
-try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch { S = seed(); }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+// State lives in memory only, so every reload starts at onboarding with the demo progress.
+const S = seed();
+try { localStorage.removeItem('virtuoso.v1'); } catch {} // clear progress saved by earlier versions
 const rank = id => S.ranks[id] || 0;
-function setRank(id, r) { if (rank(id) >= r) return; S.ranks[id] = r; save(); renderAll(); showRankUp(id, r); }
+function setRank(id, r) { if (rank(id) >= r) return; S.ranks[id] = r; renderAll(); showRankUp(id, r); }
 
 /* ===================== Helpers ===================== */
 const $ = s => document.querySelector(s);
@@ -1183,7 +1180,7 @@ function renderForgery() {
     <p class="lede">One of these is a fake. Pick the authentic painting to earn Gold.</p>
     ${pickRow}
     <h2 class="section" style="margin-bottom:16px">${p.title}</h2>
-    <div class="versus">${sides.map((fake, i) => {
+    <div class="versus${p.w > p.h ? ' stack' : ''}">${sides.map((fake, i) => {
       const L = 'AB'[i];
       const state = solved ? (fake ? ' is-fake' : ' is-right') : '';
       const stamp = solved ? (fake ? '<span class="stamp fake">Forgery</span>' : '<span class="stamp real">Authentic</span>') : '';
@@ -1530,7 +1527,7 @@ document.addEventListener('click', e => {
   if (t.id === 'retry') { F.result = null; F.fakeLeft = !F.fakeLeft; renderForgery(); $('#view-forgery').scrollTop = 0; return; }
   if (t.id === 'lb-close') return closeLightbox();
   if (t.id === 'fav-btn') return openFavorite();
-  if (d.fav) { S.favorite = d.fav; save(); closeSheet(); renderProfile(); toast(`${ARTISTS[d.fav].name} is your favorite`); return; }
+  if (d.fav) { S.favorite = d.fav; closeSheet(); renderProfile(); toast(`${ARTISTS[d.fav].name} is your favorite`); return; }
   if (t.id === 'sheet-close') return closeSheet();
   if (t.id === 'modal-ok') return closeModal();
   if (t.id === 'cam-close') return closeCamera();
@@ -1577,7 +1574,7 @@ document.addEventListener('wheel', e => {
 
 /* ===================== Onboarding ===================== */
 function finishOnboarding() {
-  S.onboarded = true; save();
+  S.onboarded = true;
   const ob = $('#onboard');
   ob.classList.add('out');
   syncInert();
@@ -1589,11 +1586,11 @@ function finishOnboarding() {
 const OB = (() => {
   const picks = ['mona-lisa', 'starry-night', 'pearl-earring', 'kiss', 'birth-venus', 'scream', 'las-meninas',
     'cafe-terrace', 'wanderer', 'arnolfini', 'ballet-class', 'monet-bridge', 'calling-matthew', 'parasol'].map(id => byId[id]);
-  const CW = 214, CH = 300, GAP = 20, SPEED = 16; // px per second
+  const CW = 240, CH = 336, GAP = 22, SPEED = 16; // px per second
   const span = picks.length * (CW + GAP);
   let cards = [], t = 0, last = 0, raf = 0, playing = false;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
-  const gallery = $('#ob-gallery'), btn = $('#ob-pause');
+  const gallery = $('#ob-gallery');
 
   gallery.setAttribute('aria-label', `A slowly moving gallery of paintings you can collect, including ${picks.slice(0, 5).map(p => p.title).join(', ')} and more.`);
   gallery.insertAdjacentHTML('beforeend', picks.map(p => `
@@ -1604,6 +1601,8 @@ const OB = (() => {
 
   function layout() {
     const vw = gallery.clientWidth, vh = gallery.clientHeight, mid = vw / 2;
+    // Pin the center card's bottom edge 153px below the middle, so the gap above the title holds as cards grow
+    const top = vh / 2 + 153 - CH * (1 + 1.06) / 2;
     cards.forEach((el, i) => {
       // Wrap each card around an endless loop that starts just off the left edge
       const x = ((i * (CW + GAP) - t * SPEED) % span + span) % span - (CW + GAP) * 2;
@@ -1611,7 +1610,7 @@ const OB = (() => {
       const lift = Math.pow(Math.abs(d), 1.4) * 56;                 // the arc: center card sits highest
       const bob = Math.sin(t * 0.6 + i * 1.3) * 3;                    // a breath of float
       const s = 1.06 - Math.min(1, Math.abs(d)) * 0.14;
-      el.style.transform = `translate3d(${x}px, ${vh / 2 - CH / 2 - 6 + lift + bob}px, 0) scale(${s})`;
+      el.style.transform = `translate3d(${x}px, ${top + lift + bob}px, 0) scale(${s})`;
       el.style.zIndex = String(100 - Math.round(Math.abs(d) * 50));
     });
   }
@@ -1623,15 +1622,9 @@ const OB = (() => {
   }
   function setPlaying(on) {
     playing = on;
-    btn.setAttribute('aria-pressed', String(!on));
-    btn.setAttribute('aria-label', on ? 'Pause the moving gallery' : 'Play the moving gallery');
-    btn.innerHTML = on
-      ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="1"/><rect x="9.5" y="2.5" width="3" height="11" rx="1"/></svg>'
-      : '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.5 2.8v10.4a.6.6 0 0 0 .9.5l8.2-5.2a.6.6 0 0 0 0-1L5.4 2.3a.6.6 0 0 0-.9.5Z"/></svg>';
     cancelAnimationFrame(raf);
     if (on) { last = performance.now(); raf = requestAnimationFrame(frame); }
   }
-  btn.addEventListener('click', () => setPlaying(!playing));
   t = 4.2; // open on a balanced arrangement
   return {
     start() { layout(); setPlaying(!reduce.matches); },
