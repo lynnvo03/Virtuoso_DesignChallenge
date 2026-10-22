@@ -99,7 +99,7 @@
     pointer-events: none;
   }
 
-  /* Full-bleed mode: on phones, and on desktop whenever browser zoom leaves no room for the device frame */
+  /* Full-bleed mode: real phones only; desktop always shows the scaled iPhone 15 frame */
   html.bleed .stage { display: block; }
   html.bleed .device { width: 100%; height: 100%; border-radius: 0; box-shadow: none; transform: none; }
   html.bleed .screen { border-radius: 0; }
@@ -1673,11 +1673,12 @@ document.addEventListener('wheel', e => {
   zoomTo(Z.s * Math.exp(-e.deltaY * 0.0022), pt.x, pt.y, false);
 }, { passive: false });
 
-// Show the device frame only when it fits at a readable size. On phones, or when browser zoom
-// (WCAG 1.4.4 / 1.4.10) would shrink the frame, the app fills the window and text grows with zoom.
+// Always keep the iPhone 15 frame (393 x 852) on desktop, scaled down to fit any window size.
+// Only real phones (touch screen, narrow viewport) let the app fill the window.
+const phone = matchMedia('(pointer: coarse) and (max-width: 500px)');
 function fit() {
   const s = Math.min(1, (innerHeight - 70) / 876, (innerWidth - 40) / 417);
-  const bleed = innerWidth <= 500 || s < 0.8;
+  const bleed = phone.matches;
   document.documentElement.classList.toggle('bleed', bleed);
   $('#device').style.setProperty('--fit', bleed ? 1 : s);
   if ($('#zoomer').classList.contains('on')) zoomLayout();
