@@ -70,10 +70,11 @@
   /* ---------- Device frame (desktop preview of iPhone 15: 393 x 852) ---------- */
   .stage { position: fixed; inset: 0; display: grid; place-items: center; }
   .device {
-    position: relative;
+    /* Pin to the exact window center, then scale; grid centering drifts once the window is shorter than 852px */
+    position: absolute; top: 50%; left: 50%;
     width: 393px; height: 852px;
     border-radius: 55px;
-    transform: scale(var(--fit, 1));
+    transform: translate(-50%, -50%) scale(var(--fit, 1));
     box-shadow: 0 0 0 11px #0A0A0C, 0 0 0 12.5px #3A3A40, 0 40px 90px -20px rgba(0,0,0,.8), 0 20px 60px -10px rgba(110, 50, 190, .35);
   }
   .screen {
@@ -101,7 +102,7 @@
 
   /* Full-bleed mode: real phones only; desktop always shows the scaled iPhone 15 frame */
   html.bleed .stage { display: block; }
-  html.bleed .device { width: 100%; height: 100%; border-radius: 0; box-shadow: none; transform: none; }
+  html.bleed .device { top: 0; left: 0; width: 100%; height: 100%; border-radius: 0; box-shadow: none; transform: none; }
   html.bleed .screen { border-radius: 0; }
   html.bleed .island, html.bleed .statusbar, html.bleed .home-indicator { display: none; }
   :root { --safe-top: 59px; --safe-bottom: 34px; }
